@@ -1,0 +1,21 @@
+name: app
+type: golang:1.11
+disk: 128
+
+hooks:
+  build: |
+    set -eux
+    go build .
+
+web:
+  commands:
+    start: ./super-potato
+
+  upstream:
+    socket_family: unix
+    protocol: http
+
+  locations:
+    /:
+      passthru: true
+      allow: false
