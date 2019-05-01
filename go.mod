@@ -1,6 +1,6 @@
 module github.com/demosdemon/super-potato
 
-go 1.11
+go 1.12
 
 require (
 	github.com/gin-contrib/sse v0.0.0-20190301062529-5545eab6dad3 // indirect

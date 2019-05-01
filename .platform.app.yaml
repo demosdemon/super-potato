@@ -1,5 +1,5 @@
 name: app
-type: golang:1.11
+type: golang:1.12
 disk: 128
 
 hooks:
