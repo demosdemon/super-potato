@@ -5,7 +5,7 @@ disk: 128
 hooks:
   build: |
     set -eux
-    go build .
+    go build -v -a -ldflags '-s -w -extldflags "-static"' .
 
 web:
   commands:
