@@ -19,3 +19,8 @@ web:
     /:
       passthru: true
       allow: false
+
+relationships:
+  cache: memcache:memcached
+  database: database:mysql
+  queue: rabbitqueue:rabbitmq
