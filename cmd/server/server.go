@@ -3,11 +3,12 @@ package server
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 
@@ -35,6 +36,7 @@ func api(group gin.IRoutes) gin.IRoutes {
 	logrus.Trace("api")
 	group.GET("/ping", ping)
 	group.GET("/routes", getRoutes)
+	group.GET("/application", getApplication)
 	group.GET("/env", listEnv)
 	group.GET("/env/:name", getEnv)
 	group.POST("/env/:name", setEnv)
@@ -58,6 +60,18 @@ func getRoutes(c *gin.Context) {
 		c.IndentedJSON(http.StatusOK, routes)
 	} else {
 		c.Redirect(http.StatusFound, "/api/env/PLATFORM_ROUTES?decode=true")
+	}
+}
+
+func getApplication(c *gin.Context) {
+	logrus.Trace("getApplication")
+	if env, ok := os.LookupEnv("PLATFORM_APPLICATION"); ok {
+		decoded, _ := base64.StdEncoding.DecodeString(env)
+		var app platformsh.Application
+		_ = json.Unmarshal(decoded, &app)
+		c.IndentedJSON(http.StatusOK, app)
+	} else {
+		c.Redirect(http.StatusFound, "/api/env/PLATFORM_APPLICATION?decode=true")
 	}
 }
 

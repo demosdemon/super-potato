@@ -6,9 +6,10 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"net/url"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -32,32 +33,24 @@ type (
 		time.Duration
 	}
 
-	Defaulter interface {
-		Missing(key string) interface{}
-	}
-
-	Validator interface {
-		Validate() error
-	}
-
-	RouteIdentificationSchema struct {
+	RouteIdentification struct {
 		Scheme string `json:"scheme"`
 		Host   string `json:"host"`
 		Path   string `json:"path"`
 	}
 
-	CacheSchema struct {
+	Cache struct {
 		Enabled    bool     `json:"enabled"`
 		DefaultTTL int      `json:"default_ttl"`
 		Cookies    []string `json:"cookies"`
 		Headers    []string `json:"headers"`
 	}
 
-	SSISchema struct {
+	SSI struct {
 		Enabled bool `json:"enabled"`
 	}
 
-	RedirectPathSchema struct {
+	RedirectPath struct {
 		Regexp       bool     `json:"regexp"`
 		To           string   `json:"to"`
 		Prefix       bool     `json:"prefix"`
@@ -66,14 +59,14 @@ type (
 		Expires      Duration `json:"expires"`
 	}
 
-	RedirectPathsSchema map[string]RedirectPathSchema
+	RedirectPaths map[string]RedirectPath
 
-	RedirectsSchema struct {
-		Expires Duration            `json:"expires"`
-		Paths   RedirectPathsSchema `json:"paths"`
+	Redirects struct {
+		Expires Duration      `json:"expires"`
+		Paths   RedirectPaths `json:"paths"`
 	}
 
-	TLSSTSSchema struct {
+	TLSSTS struct {
 		Enabled           bool `json:"enabled"`
 		IncludeSubdomains bool `json:"include_subdomains"`
 		Preload           bool `json:"preload"`
@@ -81,8 +74,8 @@ type (
 
 	TLSVersion uint16
 
-	TLSSettingsSchema struct {
-		StrictTransportSecurity      TLSSTSSchema                 `json:"strict_transport_security"`
+	TLSSettings struct {
+		StrictTransportSecurity      TLSSTS                       `json:"strict_transport_security"`
 		MinVersion                   *TLSVersion                  `json:"min_version"`
 		ClientAuthentication         string                       `json:"client_authentication"`
 		ClientCertificateAuthorities []ClientCertificateAuthority `json:"client_certificate_authorities"`
@@ -92,37 +85,37 @@ type (
 		*x509.Certificate
 	}
 
-	HTTPAccessSchema struct {
+	HTTPAccess struct {
 		Addresses []string          `json:"addresses"`
 		BasicAuth map[string]string `json:"basic_auth"`
 	}
 
-	RouteSchema struct {
+	Route struct {
 		Primary        bool              `json:"primary"`
 		ID             *string           `json:"id"`
 		OriginalURL    string            `json:"original_url"`
 		Attributes     map[string]string `json:"attributes"`
 		Type           string            `json:"type"`
-		Redirects      RedirectsSchema   `json:"redirects"`
-		TLS            TLSSettingsSchema `json:"tls"`
-		HTTPAccess     HTTPAccessSchema  `json:"http_access"`
+		Redirects      Redirects         `json:"redirects"`
+		TLS            TLSSettings       `json:"tls"`
+		HTTPAccess     HTTPAccess        `json:"http_access"`
 		RestrictRobots bool              `json:"restrict_robots"`
 
 		// Upstream Routes
-		Cache    CacheSchema `json:"cache"`
-		SSI      SSISchema   `json:"ssi"`
-		Upstream string      `json:"upstream"`
+		Cache    Cache  `json:"cache"`
+		SSI      SSI    `json:"ssi"`
+		Upstream string `json:"upstream"`
 
 		// Redirect Routes
 		To string `json:"to"`
 	}
 
-	RoutesSchema map[url.URL]RouteSchema
+	Routes map[url.URL]Route
 
-	RouteRepresentationSchema struct {
-		Project     string                    `json:"project"`
-		Environment string                    `json:"environment"`
-		Route       RouteIdentificationSchema `json:"route"`
+	RouteRepresentation struct {
+		Project     string              `json:"project"`
+		Environment string              `json:"environment"`
+		Route       RouteIdentification `json:"route"`
 	}
 )
 
@@ -200,15 +193,15 @@ func (v ClientCertificateAuthority) MarshalText() ([]byte, error) {
 	return data, nil
 }
 
-func (r *RoutesSchema) UnmarshalJSON(text []byte) error {
-	logrus.Trace("RoutesSchema.UnmarshalJSON")
-	var intermediate map[string]RouteSchema
+func (r *Routes) UnmarshalJSON(text []byte) error {
+	logrus.Trace("Routes.UnmarshalJSON")
+	var intermediate map[string]Route
 	err := json.Unmarshal(text, &intermediate)
 	if err != nil {
 		return err
 	}
 
-	*r = make(RoutesSchema, len(intermediate))
+	*r = make(Routes, len(intermediate))
 	for k, v := range intermediate {
 		kURL, err := url.Parse(k)
 		if err != nil {
@@ -221,9 +214,9 @@ func (r *RoutesSchema) UnmarshalJSON(text []byte) error {
 	return nil
 }
 
-func (r RoutesSchema) MarshalJSON() ([]byte, error) {
-	logrus.Trace("RoutesSchema.MarshalJSON")
-	intermediate := make(map[string]RouteSchema, len(r))
+func (r Routes) MarshalJSON() ([]byte, error) {
+	logrus.Trace("Routes.MarshalJSON")
+	intermediate := make(map[string]Route, len(r))
 
 	for kURL, v := range r {
 		intermediate[kURL.String()] = v
