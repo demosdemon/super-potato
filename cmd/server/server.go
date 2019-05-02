@@ -55,7 +55,7 @@ func getRoutes(c *gin.Context) {
 	logrus.Trace("getRoutes")
 	if env, ok := os.LookupEnv("PLATFORM_ROUTES"); ok {
 		decoded, _ := base64.StdEncoding.DecodeString(env)
-		routes := make(platformsh.RoutesSchema)
+		routes := make(platformsh.Routes)
 		_ = json.Unmarshal(decoded, &routes)
 		c.IndentedJSON(http.StatusOK, routes)
 	} else {
