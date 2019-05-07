@@ -4,7 +4,14 @@ package platformsh
 
 import "fmt"
 
-type AccessLevel uint8
+type (
+	AccessLevel      uint8
+	AccessType       uint8
+	ApplicationMount uint8
+	ServiceSize      uint8
+	SocketFamily     uint8
+	SocketProtocol   uint8
+)
 
 const (
 	AccessLevelViewer AccessLevel = iota
@@ -13,17 +20,117 @@ const (
 	totalAccessLevels
 )
 
-var accessLevels = [totalAccessLevels]string{
-	"viewer",
-	"contributor",
-	"admin",
-}
+const (
+	AccessTypeSSH AccessType = iota
+	totalAccessTypes
+)
 
-var accessLevelsMap = map[string]AccessLevel{
-	"viewer":      AccessLevelViewer,
-	"contributor": AccessLevelContributor,
-	"admin":       AccessLevelAdmin,
-}
+const (
+	ApplicationMountLocal ApplicationMount = iota
+	ApplicationMountTemp
+	ApplicationMountService
+	totalApplicationMounts
+)
+
+const (
+	ServiceSizeAuto ServiceSize = iota
+	ServiceSizeSmall
+	ServiceSizeMedium
+	ServiceSizeLarge
+	ServiceSizeExtraLarge
+	ServiceSizeDoubleExtraLarge
+	ServiceSizeQuadrupleExtraLarge
+	totalServiceSizes
+)
+
+const (
+	SocketFamilyTCP SocketFamily = iota
+	SocketFamilyUnix
+	totalSocketFamilies
+)
+
+const (
+	SocketProtocolHTTP SocketProtocol = iota
+	SocketProtocolFastCGI
+	SocketProtocolUWSGI
+	totalSocketProtocols
+)
+
+var (
+	accessLevels = [totalAccessLevels]string{
+		"viewer",
+		"contributor",
+		"admin",
+	}
+
+	accessTypes = [totalAccessTypes]string{
+		"ssh",
+	}
+
+	applicationMounts = [totalApplicationMounts]string{
+		"local",
+		"tmp",
+		"service",
+	}
+
+	serviceSizes = [totalServiceSizes]string{
+		"AUTO",
+		"S",
+		"M",
+		"L",
+		"XL",
+		"2XL",
+		"4XL",
+	}
+
+	socketFamilies = [totalSocketFamilies]string{
+		"tcp",
+		"unix",
+	}
+
+	socketProtocols = [totalSocketProtocols]string{
+		"http",
+		"fastcgi",
+		"uwsgi",
+	}
+
+	accessLevelsMap = map[string]AccessLevel{
+		"viewer":      AccessLevelViewer,
+		"contributor": AccessLevelContributor,
+		"admin":       AccessLevelAdmin,
+	}
+
+	accessTypesMap = map[string]AccessType{
+		"ssh": AccessTypeSSH,
+	}
+
+	applicationMountsMap = map[string]ApplicationMount{
+		"local":   ApplicationMountLocal,
+		"tmp":     ApplicationMountTemp,
+		"service": ApplicationMountService,
+	}
+
+	serviceSizesMap = map[string]ServiceSize{
+		"AUTO": ServiceSizeAuto,
+		"S":    ServiceSizeSmall,
+		"M":    ServiceSizeMedium,
+		"L":    ServiceSizeLarge,
+		"XL":   ServiceSizeExtraLarge,
+		"2XL":  ServiceSizeDoubleExtraLarge,
+		"4XL":  ServiceSizeQuadrupleExtraLarge,
+	}
+
+	socketFamiliesMap = map[string]SocketFamily{
+		"tcp":  SocketFamilyTCP,
+		"unix": SocketFamilyUnix,
+	}
+
+	socketProtocolsMap = map[string]SocketProtocol{
+		"http":    SocketProtocolHTTP,
+		"fastcgi": SocketProtocolFastCGI,
+		"uwsgi":   SocketProtocolUWSGI,
+	}
+)
 
 func NewAccessLevel(name string) (AccessLevel, error) {
 	if v, ok := accessLevelsMap[name]; ok {
@@ -48,21 +155,6 @@ func (v *AccessLevel) UnmarshalText(text []byte) (err error) {
 
 func (v AccessLevel) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
-}
-
-type AccessType uint8
-
-const (
-	AccessTypeSSH AccessType = iota
-	totalAccessTypes
-)
-
-var accessTypes = [totalAccessTypes]string{
-	"ssh",
-}
-
-var accessTypesMap = map[string]AccessType{
-	"ssh": AccessTypeSSH,
 }
 
 func NewAccessType(name string) (AccessType, error) {
@@ -90,27 +182,6 @@ func (v AccessType) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-type ApplicationMount uint8
-
-const (
-	ApplicationMountLocal ApplicationMount = iota
-	ApplicationMountTemp
-	ApplicationMountService
-	totalApplicationMounts
-)
-
-var applicationMounts = [totalApplicationMounts]string{
-	"local",
-	"tmp",
-	"service",
-}
-
-var applicationMountsMap = map[string]ApplicationMount{
-	"local":   ApplicationMountLocal,
-	"tmp":     ApplicationMountTemp,
-	"service": ApplicationMountService,
-}
-
 func NewApplicationMount(name string) (ApplicationMount, error) {
 	if v, ok := applicationMountsMap[name]; ok {
 		return v, nil
@@ -134,39 +205,6 @@ func (v *ApplicationMount) UnmarshalText(text []byte) (err error) {
 
 func (v ApplicationMount) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
-}
-
-type ServiceSize uint8
-
-const (
-	ServiceSizeAuto ServiceSize = iota
-	ServiceSizeSmall
-	ServiceSizeMedium
-	ServiceSizeLarge
-	ServiceSizeExtraLarge
-	ServiceSizeDoubleExtraLarge
-	ServiceSizeQuadrupleExtraLarge
-	totalServiceSizes
-)
-
-var serviceSizes = [totalServiceSizes]string{
-	"AUTO",
-	"S",
-	"M",
-	"L",
-	"XL",
-	"2XL",
-	"4XL",
-}
-
-var serviceSizesMap = map[string]ServiceSize{
-	"AUTO": ServiceSizeAuto,
-	"S":    ServiceSizeSmall,
-	"M":    ServiceSizeMedium,
-	"L":    ServiceSizeLarge,
-	"XL":   ServiceSizeExtraLarge,
-	"2XL":  ServiceSizeDoubleExtraLarge,
-	"4XL":  ServiceSizeQuadrupleExtraLarge,
 }
 
 func NewServiceSize(name string) (ServiceSize, error) {
@@ -194,24 +232,6 @@ func (v ServiceSize) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-type SocketFamily uint8
-
-const (
-	SocketFamilyTCP SocketFamily = iota
-	SocketFamilyUnix
-	totalSocketFamilies
-)
-
-var socketFamilies = [totalSocketFamilies]string{
-	"tcp",
-	"unix",
-}
-
-var socketFamiliesMap = map[string]SocketFamily{
-	"tcp":  SocketFamilyTCP,
-	"unix": SocketFamilyUnix,
-}
-
 func NewSocketFamily(name string) (SocketFamily, error) {
 	if v, ok := socketFamiliesMap[name]; ok {
 		return v, nil
@@ -235,27 +255,6 @@ func (v *SocketFamily) UnmarshalText(text []byte) (err error) {
 
 func (v SocketFamily) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
-}
-
-type SocketProtocol uint8
-
-const (
-	SocketProtocolHTTP SocketProtocol = iota
-	SocketProtocolFastCGI
-	SocketProtocolUWSGI
-	totalSocketProtocols
-)
-
-var socketProtocols = [totalSocketProtocols]string{
-	"http",
-	"fastcgi",
-	"uwsgi",
-}
-
-var socketProtocolsMap = map[string]SocketProtocol{
-	"http":    SocketProtocolHTTP,
-	"fastcgi": SocketProtocolFastCGI,
-	"uwsgi":   SocketProtocolUWSGI,
 }
 
 func NewSocketProtocol(name string) (SocketProtocol, error) {
