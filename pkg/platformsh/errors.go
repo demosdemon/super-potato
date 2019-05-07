@@ -7,8 +7,17 @@ import (
 
 type AggregateError []error
 
-func (e AggregateError) Append(err ...error) AggregateError {
-	return append(e, err...)
+//noinspection GoAssignmentToReceiver
+func (e AggregateError) Append(errors ...error) AggregateError {
+	for _, err := range errors {
+		switch err := err.(type) {
+		case AggregateError:
+			e = append(e, err...)
+		default:
+			e = append(e, err)
+		}
+	}
+	return e
 }
 
 func (e AggregateError) Error() string {

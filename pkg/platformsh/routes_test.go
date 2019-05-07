@@ -161,27 +161,27 @@ MC4CAQACBTQ6QL+/AgMBAAECBQpbhD15AgMH2IsCAwaoHQIDBAh7AgI0ZQIDBA0b
 		{
 			name:  "RoutesSchema",
 			input: `{"https://master-7rqtwti-fteigbda5stns.eu-3.platformsh.site/": {"primary": true, "id": null, "attributes": {}, "type": "upstream", "tls": {"client_authentication": null, "min_version": null, "client_certificate_authorities": [], "strict_transport_security": {"preload": null, "include_subdomains": null, "enabled": null}}, "cache": {"default_ttl": 0, "cookies": ["*"], "enabled": true, "headers": ["Accept", "Accept-Language"]}, "ssi": {"enabled": false}, "upstream": "app", "original_url": "https://{default}/", "restrict_robots": true, "http_access": {"addresses": [], "basic_auth": {}}}, "http://master-7rqtwti-fteigbda5stns.eu-3.platformsh.site/": {"primary": false, "id": null, "attributes": {}, "type": "redirect", "tls": {"client_authentication": null, "min_version": null, "client_certificate_authorities": [], "strict_transport_security": {"preload": null, "include_subdomains": null, "enabled": null}}, "to": "https://master-7rqtwti-fteigbda5stns.eu-3.platformsh.site/", "original_url": "http://{default}/", "restrict_robots": true, "http_access": {"addresses": [], "basic_auth": {}}}}`,
-			expected: RoutesSchema{
+			expected: Routes{
 				mustURL("https://master-7rqtwti-fteigbda5stns.eu-3.platformsh.site/"): {
 					Primary:    true,
 					Attributes: make(map[string]string),
 					Type:       "upstream",
-					TLS: TLSSettingsSchema{
+					TLS: TLSSettings{
 						ClientCertificateAuthorities: make([]ClientCertificateAuthority, 0),
 					},
-					Cache: CacheSchema{
+					Cache: Cache{
 						DefaultTTL: 0,
 						Cookies:    []string{"*"},
 						Enabled:    true,
 						Headers:    []string{"Accept", "Accept-Language"},
 					},
-					SSI: SSISchema{
+					SSI: SSI{
 						Enabled: false,
 					},
 					Upstream:       "app",
 					OriginalURL:    "https://{default}/",
 					RestrictRobots: true,
-					HTTPAccess: HTTPAccessSchema{
+					HTTPAccess: HTTPAccess{
 						Addresses: make([]string, 0),
 						BasicAuth: make(map[string]string),
 					},
@@ -190,20 +190,20 @@ MC4CAQACBTQ6QL+/AgMBAAECBQpbhD15AgMH2IsCAwaoHQIDBAh7AgI0ZQIDBA0b
 					Primary:    false,
 					Attributes: make(map[string]string),
 					Type:       "redirect",
-					TLS: TLSSettingsSchema{
+					TLS: TLSSettings{
 						ClientCertificateAuthorities: make([]ClientCertificateAuthority, 0),
 					},
 					To:             "https://master-7rqtwti-fteigbda5stns.eu-3.platformsh.site/",
 					OriginalURL:    "http://{default}/",
 					RestrictRobots: true,
-					HTTPAccess: HTTPAccessSchema{
+					HTTPAccess: HTTPAccess{
 						Addresses: make([]string, 0),
 						BasicAuth: make(map[string]string),
 					},
 				},
 			},
 			unmarshal: func(text string) (interface{}, error) {
-				var rv = make(RoutesSchema)
+				var rv = make(Routes)
 				err := json.Unmarshal([]byte(text), &rv)
 				return rv, err
 			},
