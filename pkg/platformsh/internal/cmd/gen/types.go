@@ -80,15 +80,14 @@ func (e Enum) MapDefinition() *Statement {
 }
 
 func (e Enum) MethodDefinitions() *Statement {
-	rv := make(Statement, 0, 4)
-	rv = append(
-		rv,
+	rv := new(Statement)
+	rv.Add(
 		e.newEnumMethodDefinition().Line(),
 		e.stringMethodDefinition().Line(),
 		e.unmarshalTextMethodDefinition().Line(),
 		e.marshalTextMethodDefinition().Line(),
 	)
-	return &rv
+	return rv
 }
 
 func (e Enum) newEnumMethodDefinition() *Statement {
