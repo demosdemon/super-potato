@@ -37,6 +37,7 @@ func api(group gin.IRoutes) gin.IRoutes {
 	group.GET("/ping", ping)
 	group.GET("/routes", getRoutes)
 	group.GET("/application", getApplication)
+	group.GET("/relationships", getRelationships)
 	group.GET("/env", listEnv)
 	group.GET("/env/:name", getEnv)
 	group.POST("/env/:name", setEnv)
@@ -55,7 +56,7 @@ func getRoutes(c *gin.Context) {
 	logrus.Trace("getRoutes")
 	if env, ok := os.LookupEnv("PLATFORM_ROUTES"); ok {
 		decoded, _ := base64.StdEncoding.DecodeString(env)
-		routes := make(platformsh.Routes)
+		routes := platformsh.Routes{}
 		_ = json.Unmarshal(decoded, &routes)
 		c.IndentedJSON(http.StatusOK, routes)
 	} else {
@@ -67,11 +68,30 @@ func getApplication(c *gin.Context) {
 	logrus.Trace("getApplication")
 	if env, ok := os.LookupEnv("PLATFORM_APPLICATION"); ok {
 		decoded, _ := base64.StdEncoding.DecodeString(env)
-		var app platformsh.Application
+		app := platformsh.Application{}
 		_ = json.Unmarshal(decoded, &app)
 		c.IndentedJSON(http.StatusOK, app)
 	} else {
 		c.Redirect(http.StatusFound, "/api/env/PLATFORM_APPLICATION?decode=true")
+	}
+}
+
+func getRelationships(c *gin.Context) {
+	logrus.Trace("getRelationships")
+	if env, ok := os.LookupEnv("PLATFORM_RELATIONSHIPS"); ok {
+		decoded, _ := base64.StdEncoding.DecodeString(env)
+		rels := platformsh.Relationships{}
+		if err := json.Unmarshal(decoded, &rels); err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{
+				"error":   err,
+				"message": "unable to decode JSON value",
+			})
+			return
+		}
+
+		c.IndentedJSON(http.StatusOK, rels)
+	} else {
+		c.Redirect(http.StatusFound, "/api/env/PLATFORM_RELATIONSHIPS?decode=true")
 	}
 }
 
