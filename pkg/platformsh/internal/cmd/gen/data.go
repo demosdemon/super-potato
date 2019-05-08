@@ -1,9 +1,13 @@
 package main
 
-var enums = []Enum{
+import (
+	"github.com/demosdemon/super-potato/pkg/platformsh/internal/cmd/gen/enums"
+)
+
+var enumData = enums.Collection{
 	{
 		Name: "AccessLevel",
-		Values: []EnumValue{
+		Values: []enums.EnumValue{
 			{
 				Name:  "Viewer",
 				Value: "viewer",
@@ -20,7 +24,7 @@ var enums = []Enum{
 	},
 	{
 		Name: "AccessType",
-		Values: []EnumValue{
+		Values: []enums.EnumValue{
 			{
 				Name:  "SSH",
 				Value: "ssh",
@@ -29,7 +33,7 @@ var enums = []Enum{
 	},
 	{
 		Name: "ApplicationMount",
-		Values: []EnumValue{
+		Values: []enums.EnumValue{
 			{
 				Name:  "Local",
 				Value: "local",
@@ -46,7 +50,7 @@ var enums = []Enum{
 	},
 	{
 		Name: "ServiceSize",
-		Values: []EnumValue{
+		Values: []enums.EnumValue{
 			{
 				Name:  "Auto",
 				Value: "AUTO",
@@ -79,7 +83,7 @@ var enums = []Enum{
 	},
 	{
 		Name: "SocketFamily",
-		Values: []EnumValue{
+		Values: []enums.EnumValue{
 			{
 				Name:  "TCP",
 				Value: "tcp",
@@ -92,7 +96,7 @@ var enums = []Enum{
 	},
 	{
 		Name: "SocketProtocol",
-		Values: []EnumValue{
+		Values: []enums.EnumValue{
 			{
 				Name:  "HTTP",
 				Value: "http",

@@ -1,4 +1,4 @@
-//go:generate go run ./pkg/platformsh/internal/cmd/gen -output ./pkg/platformsh/enums_gen.go
+//go:generate go run ./pkg/platformsh/internal/cmd/gen -enum ./pkg/platformsh/enums_gen.go
 
 package main
 
