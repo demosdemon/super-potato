@@ -15,8 +15,10 @@ import (
 	"github.com/demosdemon/super-potato/pkg/platformsh"
 )
 
+var env = platformsh.DefaultEnvironment
+
 func Execute() {
-	l, err := platformsh.NewListener()
+	l, err := env.Listener()
 	if err != nil {
 		panic(err)
 	}
@@ -54,44 +56,28 @@ func ping(c *gin.Context) {
 
 func getRoutes(c *gin.Context) {
 	logrus.Trace("getRoutes")
-	if env, ok := os.LookupEnv("PLATFORM_ROUTES"); ok {
-		decoded, _ := base64.StdEncoding.DecodeString(env)
-		routes := platformsh.Routes{}
-		_ = json.Unmarshal(decoded, &routes)
+	if routes, err := env.Routes(); err == nil {
 		c.IndentedJSON(http.StatusOK, routes)
 	} else {
-		c.Redirect(http.StatusFound, "/api/env/PLATFORM_ROUTES?decode=true")
+		c.IndentedJSON(http.StatusInternalServerError, err)
 	}
 }
 
 func getApplication(c *gin.Context) {
 	logrus.Trace("getApplication")
-	if env, ok := os.LookupEnv("PLATFORM_APPLICATION"); ok {
-		decoded, _ := base64.StdEncoding.DecodeString(env)
-		app := platformsh.Application{}
-		_ = json.Unmarshal(decoded, &app)
+	if app, err := env.Application(); err == nil {
 		c.IndentedJSON(http.StatusOK, app)
 	} else {
-		c.Redirect(http.StatusFound, "/api/env/PLATFORM_APPLICATION?decode=true")
+		c.IndentedJSON(http.StatusInternalServerError, err)
 	}
 }
 
 func getRelationships(c *gin.Context) {
 	logrus.Trace("getRelationships")
-	if env, ok := os.LookupEnv("PLATFORM_RELATIONSHIPS"); ok {
-		decoded, _ := base64.StdEncoding.DecodeString(env)
-		rels := platformsh.Relationships{}
-		if err := json.Unmarshal(decoded, &rels); err != nil {
-			c.IndentedJSON(http.StatusInternalServerError, gin.H{
-				"error":   err,
-				"message": "unable to decode JSON value",
-			})
-			return
-		}
-
+	if rels, err := env.Relationships(); err == nil {
 		c.IndentedJSON(http.StatusOK, rels)
 	} else {
-		c.Redirect(http.StatusFound, "/api/env/PLATFORM_RELATIONSHIPS?decode=true")
+		c.IndentedJSON(http.StatusInternalServerError, err)
 	}
 }
 
