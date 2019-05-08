@@ -22,13 +22,23 @@ const DefaultFilePermissions os.FileMode = 0644
 func main() {
 	exitCode := flag.Bool("exit-code", false, "If specified, the exit code will be the number of files written plus 1. An exit code of 1 indicates program error.")
 	enumOutput := flag.String("enum", "", "The output path of the generated enum code.")
-	//envOutput := flag.String("env", "", "The output path of the generated environment code.")
+	envOutput := flag.String("env", "", "The output path of the generated environment code.")
 	flag.Parse()
 
 	written := 0
 
 	if *enumOutput != "" {
 		err := render(enumData, *enumOutput)
+		if err != nil && err != ErrNoChange {
+			panic(err)
+		}
+		if err == nil {
+			written += 1
+		}
+	}
+
+	if *envOutput != "" {
+		err := render(wellKnownVariables, *envOutput)
 		if err != nil && err != ErrNoChange {
 			panic(err)
 		}
