@@ -6,8 +6,8 @@ hooks:
   build: |
     set -eux
     # fail to build if gen writes a file
-    go run ./pkg/platformsh/internal/cmd/gen -exit-code -enum ./pkg/platformsh/enums_gen.go
-    go run ./pkg/platformsh/internal/cmd/gen -exit-code -env ./pkg/platformsh/environment_gen.go
+    go run ./cmd/gen --exit-code --output ./pkg/platformsh/enums_gen.go enums ./data/enums.yaml
+    go run ./cmd/gen --exit-code --output ./pkg/platformsh/environment_gen.go variables ./data/variables.yaml
     go build -v -a -ldflags '-s -w -extldflags "-static"' .
 
 web:

@@ -1,0 +1,50 @@
+- name: AccessLevel
+  values:
+    - name: Viewer
+      value: viewer
+    - name: Contributor
+      value: contributor
+    - name: Admin
+      value: admin
+- name: AccessType
+  values:
+    - name: SSH
+      value: ssh
+- name: ApplicationMount
+  values:
+    - name: Local
+      value: local
+    - name: Temp
+      value: tmp
+    - name: Service
+      value: service
+- name: ServiceSize
+  values:
+    - name: Auto
+      value: AUTO
+    - name: Small
+      value: S
+    - name: Medium
+      value: M
+    - name: Large
+      value: L
+    - name: ExtraLarge
+      value: XL
+    - name: DoubleExtraLarge
+      value: 2XL
+    - name: QuadrupleExtraLarge
+      value: 4XL
+- name: SocketFamily
+  values:
+    - name: TCP
+      value: tcp
+    - name: Unix
+      value: unix
+- name: SocketProtocol
+  values:
+    - name: HTTP
+      value: http
+    - name: FastCGI
+      value: fastcgi
+    - name: UWSGI
+      value: uwsgi

@@ -6,18 +6,29 @@ import (
 	. "github.com/dave/jennifer/jen"
 	"github.com/go-openapi/inflect"
 	"github.com/iancoleman/strcase"
+
+	"gopkg.in/yaml.v2"
+
+	"github.com/demosdemon/super-potato/pkg/gen"
 )
 
 type Collection []Enum
 
 type Enum struct {
-	Name   string
-	Values []EnumValue
+	Name   string      `yaml:"name"`
+	Values []EnumValue `yaml:"values"`
 }
 
 type EnumValue struct {
-	Name  string
-	Value string
+	Name  string `yaml:"name"`
+	Value string `yaml:"value"`
+}
+
+func NewCollection(r io.Reader) (gen.Renderer, error) {
+	rv := Collection{}
+	decoder := yaml.NewDecoder(r)
+	err := decoder.Decode(&rv)
+	return rv, err
 }
 
 func (e Collection) Render(w io.Writer) error {

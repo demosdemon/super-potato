@@ -1,24 +1,34 @@
-package env
+package variables
 
 import (
 	"io"
-	"sync"
 
 	. "github.com/dave/jennifer/jen"
 	"github.com/iancoleman/strcase"
+
+	"gopkg.in/yaml.v2"
+
+	"github.com/demosdemon/super-potato/pkg/gen"
 )
 
-type WellKnownVariables []WellKnownVariable
+type Collection []WellKnownVariable
 
 type WellKnownVariable struct {
-	Name           string
-	NoPrefix       bool
-	Aliases        []string
-	DecodedType    string
-	DecodedPointer bool
+	Name           string   `yaml:"name"`
+	NoPrefix       bool     `yaml:"no_prefix"`
+	Aliases        []string `yaml:"aliases"`
+	DecodedType    string   `yaml:"decoded_type"`
+	DecodedPointer bool     `yaml:"decoded_pointer"`
 }
 
-func (l WellKnownVariables) Render(w io.Writer) error {
+func NewCollection(r io.Reader) (gen.Renderer, error) {
+	rv := Collection{}
+	decoder := yaml.NewDecoder(r)
+	err := decoder.Decode(&rv)
+	return rv, err
+}
+
+func (l Collection) Render(w io.Writer) error {
 	file := NewFile("platformsh")
 	file.HeaderComment("This file is generated - do not edit!")
 	file.Line()
@@ -34,7 +44,7 @@ func (v WellKnownVariable) names() []string {
 	rv := make([]string, len(v.Aliases)+1)
 	rv[0] = v.Name
 	copy(rv[1:], v.Aliases)
-	return apply(rv, strcase.ToCamel)
+	return gen.Apply(rv, strcase.ToCamel)
 }
 
 func (v WellKnownVariable) definition() *Statement {
@@ -198,18 +208,4 @@ func valueEquals() Code {
 	).Op(":=").Id("e").Dot("lookup").Call(
 		Id("name"),
 	)
-}
-
-func apply(input []string, fn func(string) string) []string {
-	output := make([]string, len(input))
-	wg := sync.WaitGroup{}
-	wg.Add(len(input))
-	for idx, in := range input {
-		go func(idx int, in string) {
-			output[idx] = fn(in)
-			wg.Done()
-		}(idx, in)
-	}
-	wg.Wait()
-	return output
 }

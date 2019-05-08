@@ -1,0 +1,30 @@
+- name: Application
+  decoded_type: Application
+  decoded_pointer: true
+- name: ApplicationName
+  aliases:
+    - AppName
+- name: AppCommand
+  aliases:
+    - ApplicationCommand
+- name: AppDir
+- name: Branch
+- name: Dir
+- name: DocumentRoot
+- name: Environment
+- name: Port
+  no_prefix: true
+- name: Project
+- name: ProjectEntropy
+- name: Relationships
+  decoded_type: Relationships
+- name: Routes
+  decoded_type: Routes
+- name: SMTPHost
+- name: Socket
+  no_prefix: true
+- name: TreeID
+- name: Variables
+  aliases:
+    - Vars
+  decoded_type: JSONObject
