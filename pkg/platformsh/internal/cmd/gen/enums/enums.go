@@ -215,7 +215,7 @@ func (e Enum) unmarshalTextMethodDefinition() *Statement {
 		List(
 			Op("*").Id("v"),
 			Err(),
-		).Op("=").Id("New" + e.Name).Call(
+		).Op("=").Id("New"+e.Name).Call(
 			String().Call(Id("text")),
 		),
 		Return(
