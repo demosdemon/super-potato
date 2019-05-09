@@ -275,3 +275,7 @@ func (h Header) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 
 	return nil
 }
+
+func getCertifiedUser(c *gin.Context) {
+
+}
