@@ -56,11 +56,11 @@ func definition(v variables.WellKnownVariable, name string) Code {
 			_, ok := err.(platformsh.MissingEnvironment)
 			switch {
 			case err == nil:
-				c.IndentedJSON(http.StatusOK, obj)
+				negotiate(c, http.StatusOK, obj)
 			case ok:
-				c.IndentedJSON(http.StatusNotFound, err)
+				negotiate(c, http.StatusNotFound, err)
 			default:
-				c.IndentedJSON(http.StatusInternalServerError, err)
+				negotiate(c, http.StatusInternalServerError, err)
 			}
 		}
 	*/
@@ -83,19 +83,22 @@ func definition(v variables.WellKnownVariable, name string) Code {
 		)),
 		Switch().Block(
 			Case(Err().Op("==").Nil()).Block(
-				Id("c").Dot("IndentedJSON").Call(
+				Id("negotiate").Call(
+					Id("c"),
 					Qual("net/http", "StatusOK"),
 					Id("obj"),
 				),
 			),
 			Case(Id("ok")).Block(
-				Id("c").Dot("IndentedJSON").Call(
+				Id("negotiate").Call(
+					Id("c"),
 					Qual("net/http", "StatusNotFound"),
 					Err(),
 				),
 			),
 			Default().Block(
-				Id("c").Dot("IndentedJSON").Call(
+				Id("negotiate").Call(
+					Id("c"),
 					Qual("net/http", "StatusInternalServerError"),
 					Err(),
 				),

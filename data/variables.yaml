@@ -28,3 +28,13 @@
   aliases:
     - Vars
   decoded_type: JSONObject
+- name: XClientCert
+  no_prefix: true
+- name: XClientDN
+  no_prefix: true
+- name: XClientIP
+  no_prefix: true
+- name: XClientSSL
+  no_prefix: true
+- name: XClientVerify
+  no_prefix: true

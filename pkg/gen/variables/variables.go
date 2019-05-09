@@ -58,7 +58,7 @@ func (v WellKnownVariable) definition() *Statement {
 
 func (v WellKnownVariable) function(name string) Code {
 	/*
-		func (e Environment) Application() (*Application, error) {
+		func (e *Environment) Application() (*Application, error) {
 			name := e.Prefix + "APPLICATION"
 			value, ok := e.lookup(name)
 			if !ok {
@@ -81,7 +81,7 @@ func (v WellKnownVariable) function(name string) Code {
 	*/
 
 	return Func().Params(
-		Id("e").Id("Environment"),
+		Id("e").Op("*").Id("Environment"),
 	).Id(name).Params().ParamsFunc(v.returnParams).BlockFunc(v.functionBlock).Line()
 }
 

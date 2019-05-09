@@ -32,6 +32,11 @@ func addRoutes(group gin.IRoutes) gin.IRoutes {
 	group.GET("tree_id", getTreeID)
 	group.GET("variables", getVariables)
 	group.GET("vars", getVariables)
+	group.GET("x_client_cert", getXClientCert)
+	group.GET("x_client_dn", getXClientDN)
+	group.GET("x_client_ip", getXClientIP)
+	group.GET("x_client_ssl", getXClientSSL)
+	group.GET("x_client_verify", getXClientVerify)
 	return group
 }
 
@@ -41,11 +46,11 @@ func getApplication(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -55,11 +60,11 @@ func getApplicationName(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -69,11 +74,11 @@ func getAppCommand(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -83,11 +88,11 @@ func getAppDir(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -97,11 +102,11 @@ func getBranch(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -111,11 +116,11 @@ func getDir(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -125,11 +130,11 @@ func getDocumentRoot(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -139,11 +144,11 @@ func getEnvironment(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -153,11 +158,11 @@ func getPort(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -167,11 +172,11 @@ func getProject(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -181,11 +186,11 @@ func getProjectEntropy(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -195,11 +200,11 @@ func getRelationships(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -209,11 +214,11 @@ func getRoutes(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -223,11 +228,11 @@ func getSMTPHost(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -237,11 +242,11 @@ func getSocket(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -251,11 +256,11 @@ func getTreeID(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
 
@@ -265,10 +270,80 @@ func getVariables(c *gin.Context) {
 	_, ok := err.(platformsh.MissingEnvironment)
 	switch {
 	case err == nil:
-		c.IndentedJSON(http.StatusOK, obj)
+		negotiate(c, http.StatusOK, obj)
 	case ok:
-		c.IndentedJSON(http.StatusNotFound, err)
+		negotiate(c, http.StatusNotFound, err)
 	default:
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		negotiate(c, http.StatusInternalServerError, err)
+	}
+}
+
+func getXClientCert(c *gin.Context) {
+	logrus.Trace("getXClientCert")
+	obj, err := env.XClientCert()
+	_, ok := err.(platformsh.MissingEnvironment)
+	switch {
+	case err == nil:
+		negotiate(c, http.StatusOK, obj)
+	case ok:
+		negotiate(c, http.StatusNotFound, err)
+	default:
+		negotiate(c, http.StatusInternalServerError, err)
+	}
+}
+
+func getXClientDN(c *gin.Context) {
+	logrus.Trace("getXClientDN")
+	obj, err := env.XClientDN()
+	_, ok := err.(platformsh.MissingEnvironment)
+	switch {
+	case err == nil:
+		negotiate(c, http.StatusOK, obj)
+	case ok:
+		negotiate(c, http.StatusNotFound, err)
+	default:
+		negotiate(c, http.StatusInternalServerError, err)
+	}
+}
+
+func getXClientIP(c *gin.Context) {
+	logrus.Trace("getXClientIP")
+	obj, err := env.XClientIP()
+	_, ok := err.(platformsh.MissingEnvironment)
+	switch {
+	case err == nil:
+		negotiate(c, http.StatusOK, obj)
+	case ok:
+		negotiate(c, http.StatusNotFound, err)
+	default:
+		negotiate(c, http.StatusInternalServerError, err)
+	}
+}
+
+func getXClientSSL(c *gin.Context) {
+	logrus.Trace("getXClientSSL")
+	obj, err := env.XClientSSL()
+	_, ok := err.(platformsh.MissingEnvironment)
+	switch {
+	case err == nil:
+		negotiate(c, http.StatusOK, obj)
+	case ok:
+		negotiate(c, http.StatusNotFound, err)
+	default:
+		negotiate(c, http.StatusInternalServerError, err)
+	}
+}
+
+func getXClientVerify(c *gin.Context) {
+	logrus.Trace("getXClientVerify")
+	obj, err := env.XClientVerify()
+	_, ok := err.(platformsh.MissingEnvironment)
+	switch {
+	case err == nil:
+		negotiate(c, http.StatusOK, obj)
+	case ok:
+		negotiate(c, http.StatusNotFound, err)
+	default:
+		negotiate(c, http.StatusInternalServerError, err)
 	}
 }
