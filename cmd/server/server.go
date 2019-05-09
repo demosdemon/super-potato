@@ -1,8 +1,11 @@
 package server
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -130,29 +133,13 @@ func setEnv(c *gin.Context) {
 }
 
 func anything(c *gin.Context) {
-	var body interface{}
-
-	if err := c.ShouldBind(&body); err != nil {
-		data, err := ioutil.ReadAll(c.Request.Body)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, err)
-			return
-		}
-		body = string(data)
-	}
-
-	fmt := c.NegotiateFormat(
-		binding.MIMEJSON,
-		binding.MIMEXML,
-		binding.MIMEXML2,
-		binding.MIMEYAML,
-	)
+	body := bind(c)
 
 	data := gin.H{
 		"method":            c.Request.Method,
 		"url":               c.Request.URL.String(),
 		"proto":             c.Request.Proto,
-		"headers":           c.Request.Header,
+		"headers":           Header(c.Request.Header),
 		"body":              body,
 		"content_length":    c.Request.ContentLength,
 		"transfer_encoding": c.Request.TransferEncoding,
@@ -162,8 +149,15 @@ func anything(c *gin.Context) {
 		"client_ip":         c.ClientIP(),
 	}
 
+	format := c.NegotiateFormat(
+		binding.MIMEJSON,
+		binding.MIMEXML,
+		binding.MIMEXML2,
+		binding.MIMEYAML,
+	)
+
 	var renderer render.Render
-	switch fmt {
+	switch format {
 	case binding.MIMEXML, binding.MIMEXML2:
 		renderer = render.XML{Data: data}
 	case binding.MIMEYAML:
@@ -173,4 +167,105 @@ func anything(c *gin.Context) {
 	}
 
 	c.Render(http.StatusOK, renderer)
+}
+
+func bind(c *gin.Context) interface{} {
+	var body interface{}
+	b := binding.Default(c.Request.Method, c.ContentType())
+	if bb, ok := b.(binding.BindingBody); ok {
+		if err := c.ShouldBindBodyWith(&body, bb); err != nil || body == nil {
+			if data, ok := c.Get(gin.BodyBytesKey); ok {
+				if b, ok := data.([]byte); ok {
+					body = string(b)
+				}
+			}
+		}
+	} else {
+		if data, err := c.GetRawData(); err == nil {
+			_ = c.Request.Body.Close()
+			c.Request.Body = ioutil.NopCloser(bytes.NewReader(data))
+			if err := b.Bind(c.Request, &body); err != nil || body == nil {
+				body = string(data)
+			}
+		}
+	}
+	return body
+}
+
+type Header http.Header
+
+func (h Header) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
+	start.Attr = append(start.Attr, xml.Attr{
+		Name: xml.Name{
+			Local: "length",
+		},
+		Value: fmt.Sprintf("%d", len(h)),
+	})
+	err = e.EncodeToken(start)
+	if err != nil {
+		return err
+	}
+
+	for k, v := range h {
+		keyStart := xml.StartElement{
+			Name: xml.Name{
+				Local: k,
+			},
+			Attr: []xml.Attr{
+				{
+					Name: xml.Name{
+						Local: "length",
+					},
+					Value: fmt.Sprintf("%d", len(v)),
+				},
+			},
+		}
+		err = e.EncodeToken(keyStart)
+		if err != nil {
+			return err
+		}
+
+		for idx, value := range v {
+			valueStart := xml.StartElement{
+				Name: xml.Name{
+					Local: "String",
+				},
+				Attr: []xml.Attr{
+					{
+						Name: xml.Name{
+							Local: "index",
+						},
+						Value: fmt.Sprintf("%d", idx),
+					},
+				},
+			}
+			err = e.EncodeToken(valueStart)
+			if err != nil {
+				return err
+			}
+
+			data := xml.CharData(value)
+			err = e.EncodeToken(data)
+			if err != nil {
+				return err
+			}
+
+			err = e.EncodeToken(valueStart.End())
+			if err != nil {
+				return err
+			}
+		}
+
+		err = e.EncodeToken(keyStart.End())
+		if err != nil {
+			return err
+		}
+	}
+
+	err = e.EncodeToken(start.End())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
