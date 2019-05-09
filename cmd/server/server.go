@@ -284,11 +284,23 @@ func getCertifiedUser(c *gin.Context) *User {
 		return nil
 	}
 
-	xClientCert, _ = url.QueryUnescape(xClientCert)
+	xClientCert, err := url.QueryUnescape(xClientCert)
+	if err != nil {
+		panic(err)
+	}
+
 	pemBlock, _ := pem.Decode([]byte(xClientCert))
+	if pemBlock == nil {
+		panic("invalid PEM data")
+	}
+
 	var user User
 
-	user.ClientCertificate, _ = x509.ParseCertificate(pemBlock.Bytes)
+	user.ClientCertificate, err = x509.ParseCertificate(pemBlock.Bytes)
+	if err != nil {
+		panic(err)
+	}
+
 	user.DistinguishedName = c.GetHeader("X-Client-Dn")
 	if user.DistinguishedName == "" {
 		user.DistinguishedName = user.ClientCertificate.Subject.String()
