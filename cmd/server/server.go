@@ -36,10 +36,8 @@ func Execute() {
 
 func api(group gin.IRoutes) gin.IRoutes {
 	logrus.Trace("api")
+	group = addRoutes(group)
 	group.GET("/ping", ping)
-	group.GET("/routes", getRoutes)
-	group.GET("/application", getApplication)
-	group.GET("/relationships", getRelationships)
 	group.GET("/env", listEnv)
 	group.GET("/env/:name", getEnv)
 	group.POST("/env/:name", setEnv)
@@ -52,33 +50,6 @@ func ping(c *gin.Context) {
 		"message": "pong",
 		"ts":      time.Now().UTC(),
 	})
-}
-
-func getRoutes(c *gin.Context) {
-	logrus.Trace("getRoutes")
-	if routes, err := env.Routes(); err == nil {
-		c.IndentedJSON(http.StatusOK, routes)
-	} else {
-		c.IndentedJSON(http.StatusInternalServerError, err)
-	}
-}
-
-func getApplication(c *gin.Context) {
-	logrus.Trace("getApplication")
-	if app, err := env.Application(); err == nil {
-		c.IndentedJSON(http.StatusOK, app)
-	} else {
-		c.IndentedJSON(http.StatusInternalServerError, err)
-	}
-}
-
-func getRelationships(c *gin.Context) {
-	logrus.Trace("getRelationships")
-	if rels, err := env.Relationships(); err == nil {
-		c.IndentedJSON(http.StatusOK, rels)
-	} else {
-		c.IndentedJSON(http.StatusInternalServerError, err)
-	}
 }
 
 func listEnv(c *gin.Context) {

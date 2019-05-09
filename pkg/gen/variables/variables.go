@@ -87,9 +87,8 @@ func (v WellKnownVariable) function(name string) Code {
 }
 
 func (v WellKnownVariable) returnParams(g *Group) {
-	// must be done one at a time even though the method is variadic
 	g.Add(v.returnType())
-	g.Add(Error())
+	g.Error()
 }
 
 func (v WellKnownVariable) functionBlock(g *Group) {
@@ -97,25 +96,25 @@ func (v WellKnownVariable) functionBlock(g *Group) {
 	g.Add(v.initName())
 	g.Add(valueEquals())
 	g.Add(v.ifNotOk())
-	g.Add(Line())
+	g.Line()
 	v.returnValue(g)
 }
 
 func (v WellKnownVariable) returnValue(g *Group) {
 	if v.DecodedType == "" {
-		g.Add(Return(Id("value"), Nil()))
+		g.Return(Id("value"), Nil())
 		return
 	}
 
 	// must be done one at a time even though the method is variadic
 	g.Add(decodeData())
 	g.Add(v.ifErrNotNil())
-	g.Add(Line())
+	g.Line()
 	g.Add(v.initObj())
 	g.Add(unmarshalObj())
 	g.Add(v.ifErrNotNil())
-	g.Add(Line())
-	g.Add(Return(v.returnValueStmt(), Nil()))
+	g.Line()
+	g.Return(v.returnValueStmt(), Nil())
 }
 
 func (v WellKnownVariable) returnType() Code {

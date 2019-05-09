@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/demosdemon/super-potato/pkg/gen"
+	"github.com/demosdemon/super-potato/pkg/gen/api"
 	"github.com/demosdemon/super-potato/pkg/gen/enums"
 	"github.com/demosdemon/super-potato/pkg/gen/variables"
 )
@@ -19,6 +21,7 @@ var (
 	fs        = afero.NewOsFs()
 	exit      = os.Exit
 	renderMap = gen.RenderMap{
+		"api":       api.NewCollection,
 		"enums":     enums.NewCollection,
 		"variables": variables.NewCollection,
 	}
@@ -38,6 +41,7 @@ func Command() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			template := args[0]
+			logrus.Tracef("template = %q", template)
 			input, err := getInput(args[1])
 			if err != nil {
 				return err
@@ -49,6 +53,7 @@ func Command() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			logrus.Tracef("exitCode = %v", exitCode)
 
 			output, err := flags.GetString("output")
 			if err != nil {
@@ -57,16 +62,19 @@ func Command() *cobra.Command {
 			if output == "-" {
 				output = "/dev/stdout"
 			}
+			logrus.Tracef("output = %v", output)
 
 			renderer, err := renderMap[template](input)
 			if err != nil {
 				return err
 			}
+			logrus.Tracef("renderer = %v", renderer)
 
 			err = gen.Render(renderer, output, fs)
+			logrus.Tracef("render err = %v", err)
 
 			if err != nil && err == gen.ErrNoChange {
-				exit(0)
+				return nil
 			}
 
 			if err == nil && exitCode {
@@ -85,6 +93,7 @@ func Command() *cobra.Command {
 }
 
 func getInput(s string) (io.ReadCloser, error) {
+	logrus.Tracef("getInput(%q)", s)
 	switch s {
 	case "-", "/dev/stdin":
 		return ioutil.NopCloser(os.Stdin), nil

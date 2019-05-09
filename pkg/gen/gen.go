@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"sort"
 	"strings"
 	"sync"
 
 	"github.com/spf13/afero"
+	"github.com/sqs/goreturns/returns"
+	"golang.org/x/tools/imports"
 )
 
 type (
@@ -45,7 +48,23 @@ func Render(r Renderer, filename string, fs afero.Fs) error {
 
 	current := buf.Bytes()
 
-	if bytes.Compare(previous, current) == 0 {
+	current, err = imports.Process(filename, current, &imports.Options{
+		Comments:  true,
+		TabIndent: true,
+		TabWidth:  8,
+	})
+	if err != nil {
+		return err
+	}
+
+	current, err = returns.Process(path.Dir(filename), filename, current, &returns.Options{
+		RemoveBareReturns: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	if bytes.Equal(previous, current) {
 		return ErrNoChange
 	}
 
