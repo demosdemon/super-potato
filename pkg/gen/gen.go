@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"sort"
 	"strings"
 	"sync"
@@ -58,7 +57,7 @@ func Render(r Renderer, filename string, fs afero.Fs) error {
 		return err
 	}
 
-	current, err = returns.Process(path.Dir(filename), filename, current, &returns.Options{
+	current, err = returns.Process("", filename, current, &returns.Options{
 		RemoveBareReturns: true,
 	})
 	if err != nil {

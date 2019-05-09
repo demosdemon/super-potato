@@ -6,19 +6,17 @@ hooks:
   build: |
     set -eux
     time go get ./...
-    time go build ./cmd/dump
-    time ./dump -f environ > data/.build_env
-    time ./dump -f shell > data/build_env.sh
-    time go build ./cmd/gen
-    # fail to build if gen writes a file
-    time ./gen --exit-code enums ./data/enums.yaml ./pkg/platformsh/enums_gen.go
-    time ./gen --exit-code variables ./data/variables.yaml ./pkg/platformsh/environment_gen.go
-    time ./gen --exit-code api ./data/variables.yaml ./cmd/server/generated.go
     time go build .
-    ls -l dump gen super-potato
+    time ./super-potato dump -f environ > data/.build_env
+    time ./super-potato dump -f shell > data/build_env.sh
+    # fail to build if gen writes a file
+    time ./super-potato gen --exit-code enums ./data/enums.yaml ./pkg/platformsh/enums_gen.go
+    time ./super-potato gen --exit-code variables ./data/variables.yaml ./pkg/platformsh/environment_gen.go
+    time ./super-potato gen --exit-code api ./data/variables.yaml ./cmd/server/generated.go
+    ls -l super-potato
   deploy: |
-    time ./dump -f environ > tmp/.deploy_env
-    time ./dump -f shell > tmp/deploy_env.sh
+    time ./super-potato dump -f environ > tmp/.deploy_env
+    time ./super-potato dump -f shell > tmp/deploy_env.sh
 
 mounts:
   tmp:
