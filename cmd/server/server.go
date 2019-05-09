@@ -240,7 +240,7 @@ func (h Header) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 			return err
 		}
 
-		value, err := url.QueryUnescape(v)
+		value, err := url.PathUnescape(v)
 		if err != nil {
 			value = v
 		}
@@ -284,9 +284,7 @@ func getCertifiedUser(c *gin.Context) *User {
 		return nil
 	}
 
-	// QueryUnescape incorrectly turns `+`s into spaces
-	xClientCert = strings.ReplaceAll(xClientCert, "+", "%2B")
-	xClientCert, err := url.QueryUnescape(xClientCert)
+	xClientCert, err := url.PathUnescape(xClientCert)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"xClientCert": xClientCert,
