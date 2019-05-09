@@ -6,6 +6,9 @@ hooks:
   build: |
     set -eux
     time go get ./...
+    time go build ./cmd/dump
+    time dump -f environ > data/.build_env
+    time dump -f shell > data/build_env.sh
     time go build ./cmd/gen
     # fail to build if gen writes a file
     time ./gen --exit-code enums ./data/enums.yaml ./pkg/platformsh/enums_gen.go
@@ -13,6 +16,13 @@ hooks:
     time ./gen --exit-code api ./data/variables.yaml ./cmd/server/generated.go
     time go build .
     ls -l gen super-potato
+  deploy: |
+    time go dump -f environ > tmp/.deploy_env
+    time go dump -f shell > tmp/deploy_env.sh
+
+mounts:
+  tmp:
+    source: tmp
 
 web:
   commands:
