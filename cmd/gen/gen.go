@@ -93,7 +93,6 @@ func Command(fs afero.Fs, exit func(int)) *cobra.Command {
 
 	flags := rv.Flags()
 	flags.Bool("exit-code", false, gen.ExitCodeUsage)
-	flags.String("output", "/dev/stdout", "Specify the output path.")
 
 	return &rv
 }
