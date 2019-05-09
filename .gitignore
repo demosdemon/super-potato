@@ -16,3 +16,4 @@
 ### Project specific ignore
 /.env
 /super-potato
+/pki
