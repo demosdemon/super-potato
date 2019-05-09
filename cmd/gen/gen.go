@@ -29,10 +29,13 @@ var (
 
 func Command() *cobra.Command {
 	rv := cobra.Command{
-		Use: "gen TEMPLATE INPUT",
+		Use: "gen TEMPLATE INPUT [OUTPUT]",
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 2 {
-				return errors.New("expected exactly two arguments")
+			if len(args) < 2 {
+				return errors.New("expected at least two arguments")
+			}
+			if len(args) > 3 {
+				return errors.New("expected at most three arguments")
 			}
 			if _, ok := renderMap[args[0]]; !ok {
 				return errors.New("invalid template name")
@@ -42,10 +45,21 @@ func Command() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			template := args[0]
 			logrus.Tracef("template = %q", template)
+
 			input, err := getInput(args[1])
 			if err != nil {
 				return err
 			}
+			defer input.Close()
+
+			output := "/dev/stdout"
+			if len(args) > 2 {
+				output = args[2]
+			}
+			if output == "-" {
+				output = "/dev/stdout"
+			}
+			logrus.Tracef("output = %v", output)
 
 			flags := cmd.Flags()
 
@@ -54,15 +68,6 @@ func Command() *cobra.Command {
 				return err
 			}
 			logrus.Tracef("exitCode = %v", exitCode)
-
-			output, err := flags.GetString("output")
-			if err != nil {
-				return err
-			}
-			if output == "-" {
-				output = "/dev/stdout"
-			}
-			logrus.Tracef("output = %v", output)
 
 			renderer, err := renderMap[template](input)
 			if err != nil {
