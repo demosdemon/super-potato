@@ -2,8 +2,10 @@ package server
 
 import (
 	"bytes"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
@@ -49,13 +51,14 @@ func api(group gin.IRoutes) gin.IRoutes {
 	group.GET("/env/:name", getEnv)
 	group.POST("/env/:name", setEnv)
 	group.Any("/anything/*path", anything)
+	group.GET("/user", getUser)
 
 	return group
 }
 
 func ping(c *gin.Context) {
 	logrus.Trace("ping")
-	c.IndentedJSON(http.StatusOK, gin.H{
+	negotiate(c, http.StatusOK, gin.H{
 		"message": "pong",
 		"ts":      time.Now().UTC(),
 	})
@@ -69,7 +72,7 @@ func listEnv(c *gin.Context) {
 		keys[idx] = strings.SplitN(kvp, "=", 2)[0]
 	}
 
-	c.IndentedJSON(http.StatusOK, keys)
+	negotiate(c, http.StatusOK, keys)
 }
 
 func getEnv(c *gin.Context) {
@@ -83,7 +86,7 @@ func getEnv(c *gin.Context) {
 		if decode {
 			decoded, err := base64.StdEncoding.DecodeString(val)
 			if err != nil {
-				c.IndentedJSON(http.StatusBadRequest, gin.H{
+				negotiate(c, http.StatusBadRequest, gin.H{
 					"error":   err,
 					"message": "unable to decode base64 value",
 				})
@@ -93,19 +96,19 @@ func getEnv(c *gin.Context) {
 			var obj interface{}
 			err = json.Unmarshal(decoded, &obj)
 			if err != nil {
-				c.IndentedJSON(http.StatusBadRequest, gin.H{
+				negotiate(c, http.StatusBadRequest, gin.H{
 					"error":   err,
 					"message": "unable to decode JSON value",
 				})
 				return
 			}
 
-			c.IndentedJSON(http.StatusOK, gin.H{name: obj})
+			negotiate(c, http.StatusOK, gin.H{name: obj})
 		} else {
-			c.IndentedJSON(http.StatusOK, gin.H{name: val})
+			negotiate(c, http.StatusOK, gin.H{name: val})
 		}
 	} else {
-		c.IndentedJSON(http.StatusNotFound, gin.H{
+		negotiate(c, http.StatusNotFound, gin.H{
 			"error": "not found",
 			"key":   name,
 		})
@@ -117,7 +120,7 @@ func setEnv(c *gin.Context) {
 	name := c.Param("name")
 	value, err := c.GetRawData()
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{
+		negotiate(c, http.StatusBadRequest, gin.H{
 			"error":   err,
 			"message": "error reading request data",
 		})
@@ -125,13 +128,13 @@ func setEnv(c *gin.Context) {
 	}
 	err = os.Setenv(name, string(value))
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{
+		negotiate(c, http.StatusInternalServerError, gin.H{
 			"error":   err,
 			"message": "error setting environment variable",
 		})
 		return
 	}
-	c.IndentedJSON(http.StatusCreated, gin.H{name: string(value)})
+	negotiate(c, http.StatusCreated, gin.H{name: string(value)})
 }
 
 func anything(c *gin.Context) {
@@ -151,6 +154,10 @@ func anything(c *gin.Context) {
 		"client_ip":         c.ClientIP(),
 	}
 
+	negotiate(c, http.StatusOK, data)
+}
+
+func negotiate(c *gin.Context, code int, data interface{}) {
 	format := c.NegotiateFormat(
 		binding.MIMEJSON,
 		binding.MIMEXML,
@@ -168,7 +175,7 @@ func anything(c *gin.Context) {
 		renderer = render.IndentedJSON{Data: data}
 	}
 
-	c.Render(http.StatusOK, renderer)
+	c.Render(code, renderer)
 }
 
 func bind(c *gin.Context) interface{} {
@@ -258,6 +265,45 @@ func (h Header) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return nil
 }
 
-func getCertifiedUser(c *gin.Context) {
+type User struct {
+	ClientCertificate *x509.Certificate
+	DistinguishedName string
+}
 
+const UserCacheKey = "github.com/demosdemon/super-potato/cmd/server/CertifiedUser"
+
+func getCertifiedUser(c *gin.Context) *User {
+	if v, ok := c.Get(UserCacheKey); ok {
+		if v, ok := v.(*User); ok {
+			return v
+		}
+	}
+
+	xClientCert := c.GetHeader("X-Client-Cert")
+	if xClientCert == "" {
+		return nil
+	}
+
+	xClientCert, _ = url.QueryUnescape(xClientCert)
+	pemBlock, _ := pem.Decode([]byte(xClientCert))
+	var user User
+
+	user.ClientCertificate, _ = x509.ParseCertificate(pemBlock.Bytes)
+	user.DistinguishedName = c.GetHeader("X-Client-Dn")
+	if user.DistinguishedName == "" {
+		user.DistinguishedName = user.ClientCertificate.Subject.String()
+	}
+
+	c.Set(UserCacheKey, &user)
+	return &user
+}
+
+func getUser(c *gin.Context) {
+	user := getCertifiedUser(c)
+	if user == nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	negotiate(c, http.StatusOK, user)
 }
