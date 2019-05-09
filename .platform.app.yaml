@@ -10,9 +10,9 @@ hooks:
     time ./super-potato dump -f environ > data/.build_env
     time ./super-potato dump -f shell > data/build_env.sh
     # fail to build if gen writes a file
-    time ./super-potato gen --exit-code enums ./data/enums.yaml ./pkg/platformsh/enums_gen.go
-    time ./super-potato gen --exit-code variables ./data/variables.yaml ./pkg/platformsh/environment_gen.go
-    time ./super-potato gen --exit-code api ./data/variables.yaml ./cmd/server/generated.go
+    time ./super-potato gen --exit-code enums /data/enums.yaml /pkg/platformsh/enums_gen.go
+    time ./super-potato gen --exit-code variables /data/variables.yaml /pkg/platformsh/environment_gen.go
+    time ./super-potato gen --exit-code api /data/variables.yaml /cmd/server/generated.go
     ls -l super-potato
   deploy: |
     time ./super-potato dump -f environ > tmp/.deploy_env
@@ -25,7 +25,7 @@ mounts:
 
 web:
   commands:
-    start: ./super-potato
+    start: ./super-potato serve
 
   upstream:
     socket_family: unix
