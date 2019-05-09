@@ -3,10 +3,11 @@ package main
 import (
 	"bytes"
 	"errors"
-	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"os"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
