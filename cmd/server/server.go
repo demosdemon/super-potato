@@ -286,12 +286,20 @@ func getCertifiedUser(c *gin.Context) *User {
 
 	xClientCert, err := url.QueryUnescape(xClientCert)
 	if err != nil {
-		panic(err)
+		logrus.WithFields(logrus.Fields{
+			"xClientCert": xClientCert,
+			"error":       err,
+		}).Panic("unable to decode xml URL Encoded data")
+		return nil
 	}
 
-	pemBlock, _ := pem.Decode([]byte(xClientCert))
+	pemBlock, rest := pem.Decode([]byte(xClientCert))
 	if pemBlock == nil {
-		panic("invalid PEM data")
+		logrus.WithFields(logrus.Fields{
+			"xClientCert": xClientCert,
+			"rest":        string(rest),
+		}).Panic("invalid PEM data")
+		return nil
 	}
 
 	var user User
