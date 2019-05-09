@@ -6,7 +6,7 @@ hooks:
   build: |
     set -eux
     time go get ./...
-    time go build .
+    time go build -v -a -ldflags '-s -w -extldflags "-static"' .
     time ./super-potato dump -f environ > data/.build_env
     time ./super-potato dump -f shell > data/build_env.sh
     # fail to build if gen writes a file
