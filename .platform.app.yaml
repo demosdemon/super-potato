@@ -23,6 +23,7 @@ hooks:
 mounts:
   tmp:
     source: tmp
+    source_path: tmp
 
 web:
   commands:
