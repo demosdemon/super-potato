@@ -21,7 +21,10 @@ func getCertifiedUser(c *gin.Context) *User {
 
 	xClientCert := c.GetHeader("X-Client-Cert")
 	if xClientCert == "" {
-		return nil
+		xClientCert, _ = env.XClientCert()
+		if xClientCert == "" {
+			return nil
+		}
 	}
 
 	var user User
@@ -35,7 +38,10 @@ func getCertifiedUser(c *gin.Context) *User {
 
 	user.DistinguishedName = c.GetHeader("X-Client-Dn")
 	if user.DistinguishedName == "" {
-		user.DistinguishedName = user.ClientCertificate.Subject.String()
+		user.DistinguishedName, _ = env.XClientDN()
+		if user.DistinguishedName == "" {
+			user.DistinguishedName = user.ClientCertificate.Subject.String()
+		}
 	}
 
 	c.Set(UserCacheKey, &user)

@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/demosdemon/super-potato/pkg/platformsh"
 )
 
@@ -102,9 +104,9 @@ func (c *Certificate) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.EncodeElement(v, start)
 }
 
-func (c Certificate) marshal() platformsh.JSONObject {
+func (c Certificate) marshal() interface{} {
 	raw, _ := c.MarshalText()
-	v := platformsh.JSONObject{
+	return gin.H{
 		"raw":              string(raw),
 		"serial_number":    c.SerialNumber.String(),
 		"issuer":           c.Issuer.String(),
@@ -117,7 +119,6 @@ func (c Certificate) marshal() platformsh.JSONObject {
 		"authority_key_id": encodeBytes(c.AuthorityKeyId),
 		"email":            c.EmailAddresses,
 	}
-	return v
 }
 
 type InvalidCertificate struct {

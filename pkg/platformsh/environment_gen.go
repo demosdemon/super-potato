@@ -261,3 +261,53 @@ func (e *Environment) Vars() (JSONObject, error) {
 
 	return obj, nil
 }
+
+func (e *Environment) XClientCert() (string, error) {
+	name := "X_CLIENT_CERT"
+	value, ok := e.lookup(name)
+	if !ok {
+		return "", missingEnvironment(name)
+	}
+
+	return value, nil
+}
+
+func (e *Environment) XClientDN() (string, error) {
+	name := "X_CLIENT_DN"
+	value, ok := e.lookup(name)
+	if !ok {
+		return "", missingEnvironment(name)
+	}
+
+	return value, nil
+}
+
+func (e *Environment) XClientIP() (string, error) {
+	name := "X_CLIENT_IP"
+	value, ok := e.lookup(name)
+	if !ok {
+		return "", missingEnvironment(name)
+	}
+
+	return value, nil
+}
+
+func (e *Environment) XClientSSL() (string, error) {
+	name := "X_CLIENT_SSL"
+	value, ok := e.lookup(name)
+	if !ok {
+		return "", missingEnvironment(name)
+	}
+
+	return value, nil
+}
+
+func (e *Environment) XClientVerify() (string, error) {
+	name := "X_CLIENT_VERIFY"
+	value, ok := e.lookup(name)
+	if !ok {
+		return "", missingEnvironment(name)
+	}
+
+	return value, nil
+}

@@ -15,7 +15,7 @@ hooks:
     time ./gen --exit-code variables ./data/variables.yaml ./pkg/platformsh/environment_gen.go
     time ./gen --exit-code api ./data/variables.yaml ./cmd/server/generated.go
     time go build .
-    ls -l gen super-potato
+    ls -l dump gen super-potato
   deploy: |
     time ./dump -f environ > tmp/.deploy_env
     time ./dump -f shell > tmp/deploy_env.sh
