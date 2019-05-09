@@ -3,13 +3,15 @@ package server
 import (
 	"encoding/base64"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mccutchen/go-httpbin/httpbin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/gin-gonic/gin/render"
 	"github.com/sirupsen/logrus"
 
 	"github.com/demosdemon/super-potato/pkg/platformsh"
@@ -41,12 +43,8 @@ func api(group gin.IRoutes) gin.IRoutes {
 	group.GET("/env", listEnv)
 	group.GET("/env/:name", getEnv)
 	group.POST("/env/:name", setEnv)
+	group.Any("/anything/*path", anything)
 
-	h := httpbin.New(
-		httpbin.WithMaxBodySize(2<<20),
-		httpbin.WithMaxDuration(time.Minute*30),
-	)
-	group.Any("/debug/*path", gin.WrapH(http.StripPrefix("/api/debug", h.Handler())))
 	return group
 }
 
@@ -129,4 +127,50 @@ func setEnv(c *gin.Context) {
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, gin.H{name: string(value)})
+}
+
+func anything(c *gin.Context) {
+	var body interface{}
+
+	if err := c.ShouldBind(&body); err != nil {
+		data, err := ioutil.ReadAll(c.Request.Body)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, err)
+			return
+		}
+		body = string(data)
+	}
+
+	fmt := c.NegotiateFormat(
+		binding.MIMEJSON,
+		binding.MIMEXML,
+		binding.MIMEXML2,
+		binding.MIMEYAML,
+	)
+
+	data := gin.H{
+		"method":            c.Request.Method,
+		"url":               c.Request.URL.String(),
+		"proto":             c.Request.Proto,
+		"headers":           c.Request.Header,
+		"body":              body,
+		"content_length":    c.Request.ContentLength,
+		"transfer_encoding": c.Request.TransferEncoding,
+		"host":              c.Request.Host,
+		"remote_addr":       c.Request.RemoteAddr,
+		"request_uri":       c.Request.RequestURI,
+		"client_ip":         c.ClientIP(),
+	}
+
+	var renderer render.Render
+	switch fmt {
+	case binding.MIMEXML, binding.MIMEXML2:
+		renderer = render.XML{Data: data}
+	case binding.MIMEYAML:
+		renderer = render.YAML{Data: data}
+	default:
+		renderer = render.IndentedJSON{Data: data}
+	}
+
+	c.Render(http.StatusOK, renderer)
 }
