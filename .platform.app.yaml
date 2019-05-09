@@ -12,7 +12,7 @@ hooks:
     # fail to build if gen writes a file
     time ./super-potato gen --exit-code enums /data/enums.yaml /pkg/platformsh/enums_gen.go
     time ./super-potato gen --exit-code variables /data/variables.yaml /pkg/platformsh/environment_gen.go
-    time ./super-potato gen --exit-code api /data/variables.yaml /cmd/server/generated.go
+    time ./super-potato gen --exit-code api /data/variables.yaml /cmd/serve/generated.go
     ls -l super-potato
   deploy: |
     time ./super-potato dump -f environ > tmp/.deploy_env
