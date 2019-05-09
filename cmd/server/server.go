@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -244,7 +245,12 @@ func (h Header) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 				return err
 			}
 
-			data := xml.CharData(value)
+			parsed, err := url.QueryUnescape(value)
+			if err != nil {
+				parsed = value
+			}
+
+			data := xml.CharData(parsed)
 			err = e.EncodeToken(data)
 			if err != nil {
 				return err
