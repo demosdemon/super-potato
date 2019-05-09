@@ -1,4 +1,4 @@
-package server
+package serve
 
 import (
 	"crypto/x509"
@@ -158,7 +158,7 @@ func keyUsageString(value x509.KeyUsage) string {
 
 var extKeyUsageMap = map[x509.ExtKeyUsage]string{
 	x509.ExtKeyUsageAny:                            "any",
-	x509.ExtKeyUsageServerAuth:                     "server auth",
+	x509.ExtKeyUsageServerAuth:                     "serve auth",
 	x509.ExtKeyUsageClientAuth:                     "client auth",
 	x509.ExtKeyUsageCodeSigning:                    "code signing",
 	x509.ExtKeyUsageEmailProtection:                "email protection",
@@ -167,8 +167,8 @@ var extKeyUsageMap = map[x509.ExtKeyUsage]string{
 	x509.ExtKeyUsageIPSECUser:                      "IPSEC user",
 	x509.ExtKeyUsageTimeStamping:                   "time stamping",
 	x509.ExtKeyUsageOCSPSigning:                    "OCSP signing",
-	x509.ExtKeyUsageMicrosoftServerGatedCrypto:     "Microsoft server gated crypto",
-	x509.ExtKeyUsageNetscapeServerGatedCrypto:      "Netscape server gated crypto",
+	x509.ExtKeyUsageMicrosoftServerGatedCrypto:     "Microsoft serve gated crypto",
+	x509.ExtKeyUsageNetscapeServerGatedCrypto:      "Netscape serve gated crypto",
 	x509.ExtKeyUsageMicrosoftCommercialCodeSigning: "Microsoft commercial code signing",
 	x509.ExtKeyUsageMicrosoftKernelCodeSigning:     "Microsoft kernel code signing",
 }

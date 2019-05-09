@@ -1,6 +1,6 @@
 // This file is generated - do not edit!
 
-package server
+package serve
 
 import (
 	"net/http"

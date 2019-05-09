@@ -21,7 +21,7 @@ func NewCollection(r io.Reader) (gen.Renderer, error) {
 }
 
 func (l Collection) Render(w io.Writer) error {
-	file := NewFile("server")
+	file := NewFile("serve")
 	file.HeaderComment("This file is generated - do not edit!")
 	file.Line()
 

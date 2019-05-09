@@ -1,4 +1,4 @@
-package main
+package gen
 
 import (
 	"bytes"
@@ -18,8 +18,6 @@ import (
 )
 
 var (
-	fs        = afero.NewOsFs()
-	exit      = os.Exit
 	renderMap = gen.RenderMap{
 		"api":       api.NewCollection,
 		"enums":     enums.NewCollection,
@@ -27,7 +25,19 @@ var (
 	}
 )
 
-func Command() *cobra.Command {
+func Command(fs afero.Fs, exit func(int)) *cobra.Command {
+	getInput := func(s string) (io.ReadCloser, error) {
+		logrus.Tracef("getInput(%q)", s)
+		switch s {
+		case "-", "/dev/stdin":
+			return ioutil.NopCloser(os.Stdin), nil
+		case "/dev/null":
+			return ioutil.NopCloser(new(bytes.Buffer)), nil
+		default:
+			return fs.Open(s)
+		}
+	}
+
 	rv := cobra.Command{
 		Use: "gen TEMPLATE INPUT OUTPUT",
 		Args: func(cmd *cobra.Command, args []string) error {
@@ -86,23 +96,4 @@ func Command() *cobra.Command {
 	flags.String("output", "/dev/stdout", "Specify the output path.")
 
 	return &rv
-}
-
-func getInput(s string) (io.ReadCloser, error) {
-	logrus.Tracef("getInput(%q)", s)
-	switch s {
-	case "-", "/dev/stdin":
-		return ioutil.NopCloser(os.Stdin), nil
-	case "/dev/null":
-		return ioutil.NopCloser(new(bytes.Buffer)), nil
-	default:
-		return fs.Open(s)
-	}
-}
-
-func main() {
-	err := Command().Execute()
-	if err != nil {
-		exit(1)
-	}
 }

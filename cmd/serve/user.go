@@ -1,4 +1,4 @@
-package server
+package serve
 
 import (
 	"github.com/gin-gonic/gin"
@@ -10,7 +10,7 @@ type User struct {
 	DistinguishedName string
 }
 
-const UserCacheKey = "github.com/demosdemon/super-potato/cmd/server/CertifiedUser"
+const UserCacheKey = "github.com/demosdemon/super-potato/cmd/serve/CertifiedUser"
 
 func getCertifiedUser(c *gin.Context) *User {
 	if v, ok := c.Get(UserCacheKey); ok {

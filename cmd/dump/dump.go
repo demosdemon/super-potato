@@ -1,4 +1,4 @@
-package main
+package dump
 
 import (
 	"errors"
@@ -13,7 +13,6 @@ import (
 )
 
 var (
-	exit   = os.Exit
 	stdout = os.Stdout
 )
 
@@ -97,11 +96,4 @@ func Command() *cobra.Command {
 	flags.StringP("format", "f", "environ", "Specify the output format. (environ: bare environ format as read by the API, shell: shell export commands)")
 
 	return &rv
-}
-
-func main() {
-	err := Command().Execute()
-	if err != nil {
-		exit(1)
-	}
 }
