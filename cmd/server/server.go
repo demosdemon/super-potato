@@ -284,6 +284,8 @@ func getCertifiedUser(c *gin.Context) *User {
 		return nil
 	}
 
+	// QueryUnescape incorrectly turns `+`s into spaces
+	xClientCert = strings.ReplaceAll(xClientCert, "+", "%2B")
 	xClientCert, err := url.QueryUnescape(xClientCert)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
