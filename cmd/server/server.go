@@ -1,15 +1,21 @@
 package server
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/xml"
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mccutchen/go-httpbin/httpbin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/gin-gonic/gin/render"
 	"github.com/sirupsen/logrus"
 
 	"github.com/demosdemon/super-potato/pkg/platformsh"
@@ -41,12 +47,8 @@ func api(group gin.IRoutes) gin.IRoutes {
 	group.GET("/env", listEnv)
 	group.GET("/env/:name", getEnv)
 	group.POST("/env/:name", setEnv)
+	group.Any("/anything/*path", anything)
 
-	h := httpbin.New(
-		httpbin.WithMaxBodySize(2<<20),
-		httpbin.WithMaxDuration(time.Minute*30),
-	)
-	group.Any("/debug/*path", gin.WrapH(http.StripPrefix("/api/debug", h.Handler())))
 	return group
 }
 
@@ -129,4 +131,147 @@ func setEnv(c *gin.Context) {
 		return
 	}
 	c.IndentedJSON(http.StatusCreated, gin.H{name: string(value)})
+}
+
+func anything(c *gin.Context) {
+	body := bind(c)
+
+	data := gin.H{
+		"method":            c.Request.Method,
+		"url":               c.Request.URL.String(),
+		"proto":             c.Request.Proto,
+		"headers":           Header(c.Request.Header),
+		"body":              body,
+		"content_length":    c.Request.ContentLength,
+		"transfer_encoding": c.Request.TransferEncoding,
+		"host":              c.Request.Host,
+		"remote_addr":       c.Request.RemoteAddr,
+		"request_uri":       c.Request.RequestURI,
+		"client_ip":         c.ClientIP(),
+	}
+
+	format := c.NegotiateFormat(
+		binding.MIMEJSON,
+		binding.MIMEXML,
+		binding.MIMEXML2,
+		binding.MIMEYAML,
+	)
+
+	var renderer render.Render
+	switch format {
+	case binding.MIMEXML, binding.MIMEXML2:
+		renderer = render.XML{Data: data}
+	case binding.MIMEYAML:
+		renderer = render.YAML{Data: data}
+	default:
+		renderer = render.IndentedJSON{Data: data}
+	}
+
+	c.Render(http.StatusOK, renderer)
+}
+
+func bind(c *gin.Context) interface{} {
+	var body interface{}
+	b := binding.Default(c.Request.Method, c.ContentType())
+	if bb, ok := b.(binding.BindingBody); ok {
+		if err := c.ShouldBindBodyWith(&body, bb); err != nil || body == nil {
+			if data, ok := c.Get(gin.BodyBytesKey); ok {
+				if b, ok := data.([]byte); ok {
+					body = string(b)
+				}
+			}
+		}
+	} else {
+		if data, err := c.GetRawData(); err == nil {
+			_ = c.Request.Body.Close()
+			c.Request.Body = ioutil.NopCloser(bytes.NewReader(data))
+			if err := b.Bind(c.Request, &body); err != nil || body == nil {
+				body = string(data)
+			}
+		}
+	}
+	return body
+}
+
+type Header http.Header
+
+func (h Header) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
+	start.Attr = append(start.Attr, xml.Attr{
+		Name: xml.Name{
+			Local: "length",
+		},
+		Value: fmt.Sprintf("%d", len(h)),
+	})
+	err = e.EncodeToken(start)
+	if err != nil {
+		return err
+	}
+
+	for k, v := range h {
+		keyStart := xml.StartElement{
+			Name: xml.Name{
+				Local: k,
+			},
+			Attr: []xml.Attr{
+				{
+					Name: xml.Name{
+						Local: "length",
+					},
+					Value: fmt.Sprintf("%d", len(v)),
+				},
+			},
+		}
+		err = e.EncodeToken(keyStart)
+		if err != nil {
+			return err
+		}
+
+		for idx, value := range v {
+			valueStart := xml.StartElement{
+				Name: xml.Name{
+					Local: "String",
+				},
+				Attr: []xml.Attr{
+					{
+						Name: xml.Name{
+							Local: "index",
+						},
+						Value: fmt.Sprintf("%d", idx),
+					},
+				},
+			}
+			err = e.EncodeToken(valueStart)
+			if err != nil {
+				return err
+			}
+
+			parsed, err := url.QueryUnescape(value)
+			if err != nil {
+				parsed = value
+			}
+
+			data := xml.CharData(parsed)
+			err = e.EncodeToken(data)
+			if err != nil {
+				return err
+			}
+
+			err = e.EncodeToken(valueStart.End())
+			if err != nil {
+				return err
+			}
+		}
+
+		err = e.EncodeToken(keyStart.End())
+		if err != nil {
+			return err
+		}
+	}
+
+	err = e.EncodeToken(start.End())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

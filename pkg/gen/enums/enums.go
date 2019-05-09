@@ -6,7 +6,6 @@ import (
 	. "github.com/dave/jennifer/jen"
 	"github.com/go-openapi/inflect"
 	"github.com/iancoleman/strcase"
-
 	"gopkg.in/yaml.v2"
 
 	"github.com/demosdemon/super-potato/pkg/gen"
