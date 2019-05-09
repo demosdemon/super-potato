@@ -1,3 +1,0 @@
-[submodule "vendor/github.com/mccutchen/go-httpbin"]
-	path = vendor/github.com/mccutchen/go-httpbin
-	url = https://github.com/mccutchen/go-httpbin.git
