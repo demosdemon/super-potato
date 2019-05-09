@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/gin-gonic/gin"
+	"github.com/mccutchen/go-httpbin/httpbin"
+	"github.com/sirupsen/logrus"
 
 	"github.com/demosdemon/super-potato/pkg/platformsh"
 )
@@ -41,6 +41,12 @@ func api(group gin.IRoutes) gin.IRoutes {
 	group.GET("/env", listEnv)
 	group.GET("/env/:name", getEnv)
 	group.POST("/env/:name", setEnv)
+
+	h := httpbin.New(
+		httpbin.WithMaxBodySize(2<<20),
+		httpbin.WithMaxDuration(time.Minute*30),
+	)
+	group.Any("/debug/*path", gin.WrapH(http.StripPrefix("/api/debug", h.Handler())))
 	return group
 }
 
