@@ -5,9 +5,10 @@ package server
 import (
 	"net/http"
 
-	platformsh "github.com/demosdemon/super-potato/pkg/platformsh"
 	gin "github.com/gin-gonic/gin"
 	logrus "github.com/sirupsen/logrus"
+
+	platformsh "github.com/demosdemon/super-potato/pkg/platformsh"
 )
 
 func addRoutes(group gin.IRoutes) gin.IRoutes {

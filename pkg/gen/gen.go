@@ -48,6 +48,7 @@ func Render(r Renderer, filename string, fs afero.Fs) error {
 
 	current := buf.Bytes()
 
+	imports.LocalPrefix = "github.com/demosdemon"
 	current, err = imports.Process(filename, current, &imports.Options{
 		Comments:  true,
 		TabIndent: true,
