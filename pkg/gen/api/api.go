@@ -25,24 +25,23 @@ func (l Collection) Render(w io.Writer) error {
 	file.HeaderComment("This file is generated - do not edit!")
 	file.Line()
 
-	file.Func().Id("addRoutes").Params(
-		Id("group").Qual("github.com/gin-gonic/gin", "IRoutes"),
-	).Qual("github.com/gin-gonic/gin", "IRoutes").BlockFunc(func(g *Group) {
+	file.Func().Params(
+		Id("x").Op("*").Id("API"),
+	).Id("addGeneratedRoutes").Params().BlockFunc(func(g *Group) {
 		for _, v := range l {
 			name := "get" + v.Name
 			file.Add(definition(v, name))
-			g.Id("group").Dot("GET").Call(
+			g.Id("x").Dot("routes").Dot("GET").Call(
 				Lit(strcase.ToSnake(v.Name)),
-				Id(name),
+				Id("x").Dot(name),
 			)
 			for _, a := range v.Aliases {
-				g.Id("group").Dot("GET").Call(
+				g.Id("x").Dot("routes").Dot("GET").Call(
 					Lit(strcase.ToSnake(a)),
-					Id(name),
+					Id("x").Dot(name),
 				)
 			}
 		}
-		g.Return(Id("group"))
 	}).Line()
 
 	return file.Render(w)
@@ -50,9 +49,9 @@ func (l Collection) Render(w io.Writer) error {
 
 func definition(v variables.WellKnownVariable, name string) Code {
 	/*
-		func getApplication(c *gin.Context) {
+		func (x *API) getApplication(c *gin.Context) {
 			logrus.Trace("getApplication")
-			obj, err := env.Application()
+			obj, err := x.env.Application()
 			_, ok := err.(platformsh.MissingEnvironment)
 			switch {
 			case err == nil:
@@ -64,7 +63,9 @@ func definition(v variables.WellKnownVariable, name string) Code {
 			}
 		}
 	*/
-	return Func().Id(name).Params(
+	return Func().Params(
+		Id("x").Op("*").Id("API"),
+	).Id(name).Params(
 		Id("c").Op("*").Qual("github.com/gin-gonic/gin", "Context"),
 	).Block(
 		Qual("github.com/sirupsen/logrus", "Trace").Call(
@@ -73,7 +74,7 @@ func definition(v variables.WellKnownVariable, name string) Code {
 		List(
 			Id("obj"),
 			Err(),
-		).Op(":=").Id("env").Dot(v.Name).Call(),
+		).Op(":=").Id("x").Dot("env").Dot(v.Name).Call(),
 		List(
 			Id("_"),
 			Id("ok"),

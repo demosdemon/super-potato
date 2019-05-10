@@ -10,19 +10,33 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+
+	"github.com/demosdemon/super-potato/pkg/platformsh"
 )
 
-func api(group gin.IRoutes) gin.IRoutes {
-	logrus.Trace("api")
-	group = addRoutes(group)
-	group.Any("/anything/*path", anything)
-	group.GET("/env", listEnv)
-	group.GET("/env/:name", getEnv)
-	group.GET("/ping", ping)
-	group.GET("/user", getUser)
-	group.POST("/env/:name", setEnv)
+type API struct {
+	routes gin.IRoutes
+	env    platformsh.Environment
+}
 
-	return group
+func New(routes gin.IRoutes, env platformsh.Environment) *API {
+	logrus.Trace("NewAPI")
+	rv := API{
+		routes: routes,
+		env:    env,
+	}
+	rv.addRoutes()
+	return &rv
+}
+
+func (x *API) addRoutes() {
+	x.addGeneratedRoutes()
+	x.routes.Any("/anything/*path", anything)
+	x.routes.GET("/env", listEnv)
+	x.routes.GET("/env/:name", getEnv)
+	x.routes.GET("/ping", ping)
+	x.routes.GET("/user", getUser)
+	x.routes.POST("/env/:name", setEnv)
 }
 
 func ping(c *gin.Context) {

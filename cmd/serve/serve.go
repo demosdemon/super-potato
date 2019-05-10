@@ -30,7 +30,7 @@ func Command(fs afero.Fs) *cobra.Command {
 				gin.Recovery(),
 			)
 
-			api(engine.Group("/api"))
+			_ = New(engine.Group("/api"), env)
 
 			return http.Serve(l, engine)
 		},

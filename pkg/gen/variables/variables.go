@@ -32,9 +32,11 @@ func (l Collection) Render(w io.Writer) error {
 	file.HeaderComment("This file is generated - do not edit!")
 	file.Line()
 
-	for _, v := range l {
-		file.Add(v.definition())
-	}
+	file.Type().Id("EnvironmentAPI").InterfaceFunc(func(g *Group) {
+		for _, v := range l {
+			file.Add(v.definition(g))
+		}
+	}).Line()
 
 	return file.Render(w)
 }
@@ -46,20 +48,25 @@ func (v WellKnownVariable) names() []string {
 	return gen.Apply(rv, strcase.ToCamel)
 }
 
-func (v WellKnownVariable) definition() *Statement {
+func (v WellKnownVariable) definition(g *Group) *Statement {
 	names := v.names()
 	stmts := new(Statement)
 	for _, name := range names {
+		g.Add(v.funcInterface(name))
 		stmts.Add(v.function(name)).Line()
 	}
 
 	return stmts
 }
 
+func (v WellKnownVariable) funcInterface(name string) *Statement {
+	return Id(name).Params().ParamsFunc(v.returnParams)
+}
+
 func (v WellKnownVariable) function(name string) Code {
 	/*
-		func (e *Environment) Application() (*Application, error) {
-			name := e.Prefix + "APPLICATION"
+		func (e *environment) Application() (*Application, error) {
+			name := e.Prefix() + "APPLICATION"
 			value, ok := e.lookup(name)
 			if !ok {
 				return nil, missingEnvironment(name)
@@ -81,8 +88,8 @@ func (v WellKnownVariable) function(name string) Code {
 	*/
 
 	return Func().Params(
-		Id("e").Op("*").Id("Environment"),
-	).Id(name).Params().ParamsFunc(v.returnParams).BlockFunc(v.functionBlock).Line()
+		Id("e").Op("*").Id("environment"),
+	).Add(v.funcInterface(name)).BlockFunc(v.functionBlock).Line()
 }
 
 func (v WellKnownVariable) returnParams(g *Group) {
@@ -140,7 +147,7 @@ func (v WellKnownVariable) returnValueStmt() Code {
 func (v WellKnownVariable) initName() Code {
 	rv := Id("name").Op(":=")
 	if !v.NoPrefix {
-		rv.Id("e").Dot("Prefix").Op("+")
+		rv.Id("e").Dot("Prefix").Call().Op("+")
 	}
 	return rv.Lit(strcase.ToScreamingSnake(v.Name))
 }

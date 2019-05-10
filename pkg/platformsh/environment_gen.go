@@ -7,8 +7,36 @@ import (
 	"encoding/json"
 )
 
-func (e *Environment) Application() (*Application, error) {
-	name := e.Prefix + "APPLICATION"
+type EnvironmentAPI interface {
+	Application() (*Application, error)
+	ApplicationName() (string, error)
+	AppName() (string, error)
+	AppCommand() (string, error)
+	ApplicationCommand() (string, error)
+	AppDir() (string, error)
+	Branch() (string, error)
+	Dir() (string, error)
+	DocumentRoot() (string, error)
+	Environment() (string, error)
+	Port() (string, error)
+	Project() (string, error)
+	ProjectEntropy() (string, error)
+	Relationships() (Relationships, error)
+	Routes() (Routes, error)
+	SMTPHost() (string, error)
+	Socket() (string, error)
+	TreeID() (string, error)
+	Variables() (JSONObject, error)
+	Vars() (JSONObject, error)
+	XClientCert() (string, error)
+	XClientDN() (string, error)
+	XClientIP() (string, error)
+	XClientSSL() (string, error)
+	XClientVerify() (string, error)
+}
+
+func (e *environment) Application() (*Application, error) {
+	name := e.Prefix() + "APPLICATION"
 	value, ok := e.lookup(name)
 	if !ok {
 		return nil, missingEnvironment(name)
@@ -28,8 +56,8 @@ func (e *Environment) Application() (*Application, error) {
 	return &obj, nil
 }
 
-func (e *Environment) ApplicationName() (string, error) {
-	name := e.Prefix + "APPLICATION_NAME"
+func (e *environment) ApplicationName() (string, error) {
+	name := e.Prefix() + "APPLICATION_NAME"
 	value, ok := e.lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
@@ -38,8 +66,8 @@ func (e *Environment) ApplicationName() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) AppName() (string, error) {
-	name := e.Prefix + "APPLICATION_NAME"
+func (e *environment) AppName() (string, error) {
+	name := e.Prefix() + "APPLICATION_NAME"
 	value, ok := e.lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
@@ -48,8 +76,8 @@ func (e *Environment) AppName() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) AppCommand() (string, error) {
-	name := e.Prefix + "APP_COMMAND"
+func (e *environment) AppCommand() (string, error) {
+	name := e.Prefix() + "APP_COMMAND"
 	value, ok := e.lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
@@ -58,8 +86,8 @@ func (e *Environment) AppCommand() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) ApplicationCommand() (string, error) {
-	name := e.Prefix + "APP_COMMAND"
+func (e *environment) ApplicationCommand() (string, error) {
+	name := e.Prefix() + "APP_COMMAND"
 	value, ok := e.lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
@@ -68,8 +96,8 @@ func (e *Environment) ApplicationCommand() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) AppDir() (string, error) {
-	name := e.Prefix + "APP_DIR"
+func (e *environment) AppDir() (string, error) {
+	name := e.Prefix() + "APP_DIR"
 	value, ok := e.lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
@@ -78,8 +106,8 @@ func (e *Environment) AppDir() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) Branch() (string, error) {
-	name := e.Prefix + "BRANCH"
+func (e *environment) Branch() (string, error) {
+	name := e.Prefix() + "BRANCH"
 	value, ok := e.lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
@@ -88,8 +116,8 @@ func (e *Environment) Branch() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) Dir() (string, error) {
-	name := e.Prefix + "DIR"
+func (e *environment) Dir() (string, error) {
+	name := e.Prefix() + "DIR"
 	value, ok := e.lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
@@ -98,8 +126,8 @@ func (e *Environment) Dir() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) DocumentRoot() (string, error) {
-	name := e.Prefix + "DOCUMENT_ROOT"
+func (e *environment) DocumentRoot() (string, error) {
+	name := e.Prefix() + "DOCUMENT_ROOT"
 	value, ok := e.lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
@@ -108,8 +136,8 @@ func (e *Environment) DocumentRoot() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) Environment() (string, error) {
-	name := e.Prefix + "ENVIRONMENT"
+func (e *environment) Environment() (string, error) {
+	name := e.Prefix() + "ENVIRONMENT"
 	value, ok := e.lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
@@ -118,7 +146,7 @@ func (e *Environment) Environment() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) Port() (string, error) {
+func (e *environment) Port() (string, error) {
 	name := "PORT"
 	value, ok := e.lookup(name)
 	if !ok {
@@ -128,8 +156,8 @@ func (e *Environment) Port() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) Project() (string, error) {
-	name := e.Prefix + "PROJECT"
+func (e *environment) Project() (string, error) {
+	name := e.Prefix() + "PROJECT"
 	value, ok := e.lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
@@ -138,8 +166,8 @@ func (e *Environment) Project() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) ProjectEntropy() (string, error) {
-	name := e.Prefix + "PROJECT_ENTROPY"
+func (e *environment) ProjectEntropy() (string, error) {
+	name := e.Prefix() + "PROJECT_ENTROPY"
 	value, ok := e.lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
@@ -148,8 +176,8 @@ func (e *Environment) ProjectEntropy() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) Relationships() (Relationships, error) {
-	name := e.Prefix + "RELATIONSHIPS"
+func (e *environment) Relationships() (Relationships, error) {
+	name := e.Prefix() + "RELATIONSHIPS"
 	value, ok := e.lookup(name)
 	if !ok {
 		return nil, missingEnvironment(name)
@@ -169,8 +197,8 @@ func (e *Environment) Relationships() (Relationships, error) {
 	return obj, nil
 }
 
-func (e *Environment) Routes() (Routes, error) {
-	name := e.Prefix + "ROUTES"
+func (e *environment) Routes() (Routes, error) {
+	name := e.Prefix() + "ROUTES"
 	value, ok := e.lookup(name)
 	if !ok {
 		return nil, missingEnvironment(name)
@@ -190,8 +218,8 @@ func (e *Environment) Routes() (Routes, error) {
 	return obj, nil
 }
 
-func (e *Environment) SMTPHost() (string, error) {
-	name := e.Prefix + "SMTP_HOST"
+func (e *environment) SMTPHost() (string, error) {
+	name := e.Prefix() + "SMTP_HOST"
 	value, ok := e.lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
@@ -200,7 +228,7 @@ func (e *Environment) SMTPHost() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) Socket() (string, error) {
+func (e *environment) Socket() (string, error) {
 	name := "SOCKET"
 	value, ok := e.lookup(name)
 	if !ok {
@@ -210,8 +238,8 @@ func (e *Environment) Socket() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) TreeID() (string, error) {
-	name := e.Prefix + "TREE_ID"
+func (e *environment) TreeID() (string, error) {
+	name := e.Prefix() + "TREE_ID"
 	value, ok := e.lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
@@ -220,8 +248,8 @@ func (e *Environment) TreeID() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) Variables() (JSONObject, error) {
-	name := e.Prefix + "VARIABLES"
+func (e *environment) Variables() (JSONObject, error) {
+	name := e.Prefix() + "VARIABLES"
 	value, ok := e.lookup(name)
 	if !ok {
 		return nil, missingEnvironment(name)
@@ -241,8 +269,8 @@ func (e *Environment) Variables() (JSONObject, error) {
 	return obj, nil
 }
 
-func (e *Environment) Vars() (JSONObject, error) {
-	name := e.Prefix + "VARIABLES"
+func (e *environment) Vars() (JSONObject, error) {
+	name := e.Prefix() + "VARIABLES"
 	value, ok := e.lookup(name)
 	if !ok {
 		return nil, missingEnvironment(name)
@@ -262,7 +290,7 @@ func (e *Environment) Vars() (JSONObject, error) {
 	return obj, nil
 }
 
-func (e *Environment) XClientCert() (string, error) {
+func (e *environment) XClientCert() (string, error) {
 	name := "X_CLIENT_CERT"
 	value, ok := e.lookup(name)
 	if !ok {
@@ -272,7 +300,7 @@ func (e *Environment) XClientCert() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) XClientDN() (string, error) {
+func (e *environment) XClientDN() (string, error) {
 	name := "X_CLIENT_DN"
 	value, ok := e.lookup(name)
 	if !ok {
@@ -282,7 +310,7 @@ func (e *Environment) XClientDN() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) XClientIP() (string, error) {
+func (e *environment) XClientIP() (string, error) {
 	name := "X_CLIENT_IP"
 	value, ok := e.lookup(name)
 	if !ok {
@@ -292,7 +320,7 @@ func (e *Environment) XClientIP() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) XClientSSL() (string, error) {
+func (e *environment) XClientSSL() (string, error) {
 	name := "X_CLIENT_SSL"
 	value, ok := e.lookup(name)
 	if !ok {
@@ -302,7 +330,7 @@ func (e *Environment) XClientSSL() (string, error) {
 	return value, nil
 }
 
-func (e *Environment) XClientVerify() (string, error) {
+func (e *environment) XClientVerify() (string, error) {
 	name := "X_CLIENT_VERIFY"
 	value, ok := e.lookup(name)
 	if !ok {

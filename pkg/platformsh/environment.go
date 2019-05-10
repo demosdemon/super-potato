@@ -11,48 +11,83 @@ import (
 	"github.com/spf13/afero"
 )
 
-var DefaultEnvironment = &Environment{Prefix: "PLATFORM_"}
+type Environment interface {
+	EnvironmentAPI
+
+	Prefix() string
+
+	FileSystem() afero.Fs
+	SetFileSystem(afero.Fs)
+
+	SetLookupFunc(LookupFunc)
+	Lookup(string) (string, bool)
+
+	ReadDotEnv()
+
+	Listener() (net.Listener, error)
+}
+
+var DefaultEnvironment = NewEnvironment("PLATFORM_")
 
 type LookupFunc func(string) (string, bool)
 
-type Environment struct {
-	Prefix string
-	Lookup LookupFunc
+type environment struct {
+	prefix string
 
 	fsMu sync.Mutex
 	fs   afero.Fs
+
+	lookupMu sync.Mutex
+	lookup   LookupFunc
 
 	readDotEnvOnce sync.Once
 	dotEnv         map[string]string
 }
 
-func (e *Environment) FileSystem() afero.Fs {
+func DefaultFileSystem(cwd string) afero.Fs {
+	if cwd == "" {
+		cwd, _ = os.Getwd()
+	}
+
+	fs := afero.NewOsFs()
+	if cwd != "" {
+		fs = afero.NewBasePathFs(fs, cwd)
+	}
+
+	return fs
+}
+
+func NewEnvironment(prefix string) Environment {
+	return &environment{prefix: prefix}
+}
+
+func (e *environment) Prefix() string {
+	return e.prefix
+}
+
+func (e *environment) FileSystem() afero.Fs {
 	cwd, _ := os.Getwd()
 
 	e.fsMu.Lock()
 	if e.fs == nil {
-		fs := afero.NewOsFs()
-		if cwd != "" {
-			fs = afero.NewBasePathFs(fs, cwd)
-		}
-		e.fs = fs
+		e.fs = DefaultFileSystem(cwd)
 	}
 	fs := e.fs
 	e.fsMu.Unlock()
 	return fs
 }
 
-func (e *Environment) SetFileSystem(fs afero.Fs) {
+func (e *environment) SetFileSystem(fs afero.Fs) {
 	e.fsMu.Lock()
 	e.fs = fs
 	e.fsMu.Unlock()
 }
 
-func (e *Environment) ReadDotEnv() {
+func (e *environment) ReadDotEnv() {
 	e.readDotEnvOnce.Do(e.reallyReadDotEnv)
 }
 
-func (e *Environment) reallyReadDotEnv() {
+func (e *environment) reallyReadDotEnv() {
 	fs := e.FileSystem()
 	fp, err := fs.Open("/.env")
 	if os.IsNotExist(err) {
@@ -76,20 +111,29 @@ func (e *Environment) reallyReadDotEnv() {
 	_ = fp.Close()
 }
 
-func (e *Environment) lookup(name string) (string, bool) {
+func (e *environment) Lookup(name string) (string, bool) {
 	e.ReadDotEnv()
 	if v, ok := e.dotEnv[name]; ok {
 		return v, true
 	}
 
+	e.lookupMu.Lock()
 	fn := e.Lookup
+	e.lookupMu.Unlock()
+
 	if fn == nil {
 		fn = os.LookupEnv
 	}
 	return fn(name)
 }
 
-func (e *Environment) Listener() (net.Listener, error) {
+func (e *environment) SetLookupFunc(fn LookupFunc) {
+	e.lookupMu.Lock()
+	e.lookup = fn
+	e.lookupMu.Unlock()
+}
+
+func (e *environment) Listener() (net.Listener, error) {
 	logrus.Trace("NewListener")
 
 	var agg = make(AggregateError, 0, 2)
