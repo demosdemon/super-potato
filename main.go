@@ -5,10 +5,11 @@
 package main
 
 import (
+	"os"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"os"
 
 	"github.com/demosdemon/super-potato/cmd/dump"
 	"github.com/demosdemon/super-potato/cmd/gen"

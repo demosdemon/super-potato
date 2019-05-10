@@ -59,7 +59,7 @@ func (v WellKnownVariable) definition(g *Group) *Statement {
 	return stmts
 }
 
-func (v WellKnownVariable) funcInterface(name string) *Statement {
+func (v WellKnownVariable) funcInterface(name string) Code {
 	return Id(name).Params().ParamsFunc(v.returnParams)
 }
 
