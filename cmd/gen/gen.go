@@ -1,4 +1,4 @@
-package gen
+package main
 
 import (
 	"bytes"
@@ -16,6 +16,25 @@ import (
 	"github.com/demosdemon/super-potato/pkg/gen/enums"
 	"github.com/demosdemon/super-potato/pkg/gen/variables"
 )
+
+var exit = logrus.Exit
+
+func main() {
+	err := Command(
+		afero.NewOsFs(),
+		exit,
+	).Execute()
+
+	if err == gen.ErrNoChange {
+		err = nil
+	}
+
+	if err != nil {
+		exit(1)
+	}
+
+	exit(0)
+}
 
 var (
 	renderMap = gen.RenderMap{

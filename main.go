@@ -1,6 +1,6 @@
-//go:generate time go run . gen enums /data/enums.yaml /pkg/platformsh/enums_gen.go
-//go:generate time go run . gen variables /data/variables.yaml /pkg/platformsh/environment_gen.go
-//go:generate time go run . gen api /data/variables.yaml /cmd/serve/generated.go
+//go:generate time go run ./cmd/gen enums ./data/enums.yaml ./pkg/platformsh/enums_gen.go
+//go:generate time go run ./cmd/gen variables ./data/variables.yaml ./pkg/platformsh/environment_gen.go
+//go:generate time go run ./cmd/gen api ./data/variables.yaml ./cmd/serve/generated.go
 
 package main
 
@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/demosdemon/super-potato/cmd/dump"
-	"github.com/demosdemon/super-potato/cmd/gen"
 	"github.com/demosdemon/super-potato/cmd/serve"
 )
 
@@ -55,7 +54,6 @@ func Command() *cobra.Command {
 	flags.StringP("log-level", "l", "trace", "control the logging verbosity")
 
 	rv.AddCommand(dump.Command())
-	rv.AddCommand(gen.Command(fs, exit))
 	rv.AddCommand(serve.Command(fs))
 
 	return &rv
