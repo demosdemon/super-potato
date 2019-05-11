@@ -41,24 +41,9 @@ func Command() *cobra.Command {
 				return err
 			}
 
-			var level logrus.Level
-			switch ll {
-			case "trace":
-				level = logrus.TraceLevel
-			case "debug":
-				level = logrus.DebugLevel
-			case "info":
-				level = logrus.InfoLevel
-			case "warn", "warning":
-				level = logrus.WarnLevel
-			case "error":
-				level = logrus.ErrorLevel
-			case "fatal":
-				level = logrus.FatalLevel
-			case "panic":
-				level = logrus.PanicLevel
-			default:
-				logrus.Panicf("unknown log level %s", ll)
+			level, err := logrus.ParseLevel(ll)
+			if err != nil {
+				return err
 			}
 
 			logrus.SetLevel(level)

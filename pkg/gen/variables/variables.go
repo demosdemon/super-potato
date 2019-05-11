@@ -87,9 +87,7 @@ func (v WellKnownVariable) function(name string) Code {
 		}
 	*/
 
-	return Func().Params(
-		Id("e").Op("*").Id("environment"),
-	).Add(v.funcInterface(name)).BlockFunc(v.functionBlock).Line()
+	return Func().Params(receiver()).Add(v.funcInterface(name)).BlockFunc(v.functionBlock).Line()
 }
 
 func (v WellKnownVariable) returnParams(g *Group) {
@@ -213,4 +211,8 @@ func valueEquals() Code {
 	).Op(":=").Id("e").Dot("lookup").Call(
 		Id("name"),
 	)
+}
+
+func receiver() Code {
+	return Id("e").Op("*").Id("environment")
 }

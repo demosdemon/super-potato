@@ -11,6 +11,13 @@ import (
 	"github.com/demosdemon/super-potato/pkg/gen/variables"
 )
 
+const (
+	logrusPath     = "github.com/sirupsen/logrus"
+	platformshPath = "github.com/demosdemon/super-potato/pkg/platformsh"
+	ginPath        = "github.com/gin-gonic/gin"
+	httpPath       = "net/http"
+)
+
 type Collection []variables.WellKnownVariable
 
 func NewCollection(r io.Reader) (gen.Renderer, error) {
@@ -25,12 +32,10 @@ func (l Collection) Render(w io.Writer) error {
 	file.HeaderComment("This file is generated - do not edit!")
 	file.Line()
 
-	file.Func().Params(
-		Id("x").Op("*").Id("API"),
-	).Id("addGeneratedRoutes").Params().BlockFunc(func(g *Group) {
+	file.Func().Params(receiver()).Id("addGeneratedRoutes").Params().BlockFunc(func(g *Group) {
 		for _, v := range l {
 			name := "get" + v.Name
-			file.Add(definition(v, name))
+			file.Add(getterDefinition(v, name))
 			g.Id("x").Dot("routes").Dot("GET").Call(
 				Lit(strcase.ToSnake(v.Name)),
 				Id("x").Dot(name),
@@ -47,7 +52,7 @@ func (l Collection) Render(w io.Writer) error {
 	return file.Render(w)
 }
 
-func definition(v variables.WellKnownVariable, name string) Code {
+func getterDefinition(v variables.WellKnownVariable, name string) Code {
 	/*
 		func (x *API) getApplication(c *gin.Context) {
 			logrus.Trace("getApplication")
@@ -63,14 +68,8 @@ func definition(v variables.WellKnownVariable, name string) Code {
 			}
 		}
 	*/
-	return Func().Params(
-		Id("x").Op("*").Id("API"),
-	).Id(name).Params(
-		Id("c").Op("*").Qual("github.com/gin-gonic/gin", "Context"),
-	).Block(
-		Qual("github.com/sirupsen/logrus", "Trace").Call(
-			Lit(name),
-		),
+	return Func().Params(receiver()).Id(name).Params(contextParam()).Block(
+		Qual(logrusPath, "Trace").Call(Lit(name)),
 		List(
 			Id("obj"),
 			Err(),
@@ -78,32 +77,37 @@ func definition(v variables.WellKnownVariable, name string) Code {
 		List(
 			Id("_"),
 			Id("ok"),
-		).Op(":=").Err().Assert(Qual(
-			"github.com/demosdemon/super-potato/pkg/platformsh",
-			"MissingEnvironment",
-		)),
+		).Op(":=").Err().Assert(Qual(platformshPath, "MissingEnvironment")),
 		Switch().Block(
 			Case(Err().Op("==").Nil()).Block(
 				Id("negotiate").Call(
 					Id("c"),
-					Qual("net/http", "StatusOK"),
+					Qual(httpPath, "StatusOK"),
 					Id("obj"),
 				),
 			),
 			Case(Id("ok")).Block(
 				Id("negotiate").Call(
 					Id("c"),
-					Qual("net/http", "StatusNotFound"),
+					Qual(httpPath, "StatusNotFound"),
 					Err(),
 				),
 			),
 			Default().Block(
 				Id("negotiate").Call(
 					Id("c"),
-					Qual("net/http", "StatusInternalServerError"),
+					Qual(httpPath, "StatusInternalServerError"),
 					Err(),
 				),
 			),
 		),
 	).Line()
+}
+
+func receiver() Code {
+	return Id("x").Op("*").Id("API")
+}
+
+func contextParam() Code {
+	return Id("c").Op("*").Qual(ginPath, "Context")
 }
