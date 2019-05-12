@@ -68,6 +68,15 @@ func (s *Server) register() {
 	s.GET("/", s.root)
 	s.GET("/ping", s.getPing)
 	s.GET("/user", s.getUser)
+	s.registerGeneratedRoutes(s.Group("/env", func(c *gin.Context) {
+		defer c.Next()
+		if !getUser(c).Authenticated() {
+			s.negotiate(c, http.StatusUnauthorized, gin.H{
+				"message": "not logged in",
+			})
+			c.Abort()
+		}
+	}))
 }
 
 func (s *Server) root(c *gin.Context) {

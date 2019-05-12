@@ -2,13 +2,13 @@ package server
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin/render"
-	"github.com/sirupsen/logrus"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/gin-gonic/gin/render"
 	"github.com/russross/blackfriday/v2"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
