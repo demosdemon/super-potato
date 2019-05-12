@@ -116,7 +116,7 @@ func (e *environment) Lookup(name string) (string, bool) {
 	}
 
 	e.lookupMu.Lock()
-	fn := e.Lookup
+	fn := e.lookup
 	e.lookupMu.Unlock()
 
 	if fn == nil {
