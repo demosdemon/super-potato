@@ -73,7 +73,7 @@ func (s *Server) register() {
 		if !getUser(c).Authenticated() {
 			s.negotiate(c, http.StatusUnauthorized, gin.H{
 				"message": "not logged in",
-				"headers":  Header{c.Request.Header},
+				"headers": Header{c.Request.Header},
 			})
 			c.Abort()
 		}
