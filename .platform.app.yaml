@@ -6,18 +6,15 @@ hooks:
   build: !include
     type: string
     path: .platform/build.sh
-  deploy: !include
-    type: string
-    path: .platform/deploy.sh
-  post_deploy: !include
-    type: string
-    path: .platform/post_deploy.sh
 
 mounts:
-  tmp:
+  /var/tmp:
     source: tmp
     source_path: tmp
-  pki:
+  /var/log:
+    source: local
+    source_path: log
+  /var/pki:
     source: service
     service: storage
     source_path: pki
