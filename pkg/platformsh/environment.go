@@ -27,8 +27,6 @@ type Environment interface {
 	Listener() (net.Listener, error)
 }
 
-var DefaultEnvironment = NewEnvironment("PLATFORM_")
-
 type LookupFunc func(string) (string, bool)
 
 type environment struct {

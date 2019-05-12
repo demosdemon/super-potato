@@ -67,7 +67,7 @@ func (v WellKnownVariable) function(name string) Code {
 	/*
 		func (e *environment) Application() (*Application, error) {
 			name := e.Prefix() + "APPLICATION"
-			value, ok := e.lookup(name)
+			value, ok := e.Lookup(name)
 			if !ok {
 				return nil, missingEnvironment(name)
 			}
@@ -208,7 +208,7 @@ func valueEquals() Code {
 	return List(
 		Id("value"),
 		Id("ok"),
-	).Op(":=").Id("e").Dot("lookup").Call(
+	).Op(":=").Id("e").Dot("Lookup").Call(
 		Id("name"),
 	)
 }
