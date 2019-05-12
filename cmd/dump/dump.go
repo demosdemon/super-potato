@@ -1,14 +1,12 @@
 package dump
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -20,19 +18,31 @@ type formatter interface {
 	format(w io.Writer, key, value string) error
 }
 
-type environFormatter struct{}
-type shellFormatter struct{}
+type formatTemplate string
+
+const (
+	environFormat formatTemplate = "%s=%s\n"
+	shellFormat   formatTemplate = "export %s=%q\n"
+)
+
+func (f formatTemplate) format(w io.Writer, key, value string) error {
+	_, err := fmt.Fprintf(w, string(f), key, value)
+	if err != nil {
+		return err
+	}
+
+	return flush(w)
+}
 
 func newFormatter(arg string) formatter {
 	switch arg {
 	case "environ":
-		return environFormatter{}
+		return environFormat
 	case "shell":
-		return shellFormatter{}
+		return shellFormat
 	default:
-		logrus.WithField("arg", arg).Panic("invalid formatter")
+		return formatTemplate(arg)
 	}
-	panic(nil)
 }
 
 type flusher interface {
@@ -49,35 +59,17 @@ func flush(w io.Writer) error {
 	return nil
 }
 
-func (environFormatter) format(w io.Writer, key, value string) error {
-	_, err := fmt.Fprintf(w, "%s=%s\n", key, value)
-	if err != nil {
-		return err
-	}
-
-	return flush(w)
-}
-
-func (shellFormatter) format(w io.Writer, key, value string) error {
-	_, err := fmt.Fprintf(w, "export %s=%q\n", key, value)
-	if err != nil {
-		return err
-	}
-
-	return flush(w)
-}
-
 func Command() *cobra.Command {
 	rv := cobra.Command{
 		Use:  "dump",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			formatFlag := cmd.Flag("format")
-			if formatFlag == nil {
-				return errors.New("format flag not defined")
+			format, err := cmd.Flags().GetString("format")
+			if err != nil {
+				return err
 			}
 
-			f := newFormatter(formatFlag.Value.String())
+			f := newFormatter(format)
 			for _, line := range os.Environ() {
 				if idx := strings.Index(line, "="); idx > 0 {
 					k := line[:idx]
