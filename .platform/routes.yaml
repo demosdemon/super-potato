@@ -2,7 +2,7 @@ https://{default}/:
   type: upstream
   upstream: app:http
 
-https://{default}/api/:
+https://api.{default}/:
   type: upstream
   upstream: app:http
   cache:
