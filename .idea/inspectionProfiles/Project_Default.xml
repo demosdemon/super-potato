@@ -15,6 +15,7 @@
         <method importPath="math/rand" receiver="*Rand" name="Read" />
         <method importPath="io" receiver="ReadCloser" name="Close" />
         <method importPath="github.com/spf13/afero" receiver="File" name="Close" />
+        <method importPath="github.com/gin-gonic/gin" receiver="*Context" name="AbortWithError" />
       </methods>
     </inspection_tool>
   </profile>

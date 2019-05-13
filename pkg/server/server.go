@@ -1,8 +1,6 @@
 package server
 
 import (
-	"bytes"
-	"html/template"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -25,6 +23,8 @@ type Server struct {
 	*gin.Engine
 
 	registerOnce sync.Once
+
+	start time.Time
 }
 
 func New(app *app.App) *Server {
@@ -43,6 +43,7 @@ func New(app *app.App) *Server {
 		Fs:          fs,
 		Environment: env,
 		Engine:      engine,
+		start:       time.Now().Truncate(time.Second),
 	}
 
 	s.SetFileSystem(s)
@@ -81,7 +82,9 @@ func (s *Server) register() {
 		}
 	}))
 
+	s.GET("/favicon.ico", s.serverLifetimeMiddleware, s.getFaviconICO)
 	s.GET("/logo.svg", s.getLogoSVG)
+	s.GET("/logo.png", s.serverLifetimeMiddleware, s.getLogoPNG)
 }
 
 func (s *Server) root(c *gin.Context) {
@@ -130,40 +133,52 @@ func (s *Server) getUser(c *gin.Context) {
 }
 
 func (s *Server) getLogoSVG(c *gin.Context) {
-	c.Render(http.StatusOK, &logoSVG{
-		Background: c.DefaultQuery("background", "#0a0a0a"),
-		Foreground: c.DefaultQuery("foreground", "#fff"),
-	})
+	logo := platformsh.NewLogoSVG()
+	logo.Background = c.DefaultQuery("background", logo.Background)
+	logo.Foreground = c.DefaultQuery("foreground", logo.Foreground)
+	c.Render(http.StatusOK, logo)
 }
 
-const logoSVGTemplate = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
-<defs><style>.background {fill: {{ .Background }};}.foreground {fill: {{ .Foreground }};}</style>
-</defs>
-<rect class="background" width="50" height="50"/>
-<rect class="foreground" x="10.73" y="10.72" width="28.55" height="11.35"/>
-<rect class="foreground" x="10.73" y="35.42" width="28.55" height="3.86"/>
-<rect class="foreground" x="10.73" y="25.74" width="28.55" height="5.82"/>
-</svg>
-`
-
-type logoSVG struct {
-	Background string
-	Foreground string
+func (s *Server) getFaviconICO(c *gin.Context) {
+	logo := platformsh.NewRasterLogo()
+	logo.Size = 32
+	render := logo.Negotiate(c)
+	c.Render(http.StatusOK, render)
 }
 
-func (x *logoSVG) Render(w http.ResponseWriter) error {
-	x.WriteContentType(w)
-	var buf bytes.Buffer
-	tpl := template.Must(template.New("").Parse(logoSVGTemplate))
-	err := tpl.Execute(&buf, x)
-	if err != nil {
-		return err
+func (s *Server) getLogoPNG(c *gin.Context) {
+	logo := platformsh.NewRasterLogo()
+	logo.Size = 50
+	render := platformsh.RenderRasterLogo{
+		RasterLogo:  logo,
+		ContentType: platformsh.FormatPNG,
+	}
+	c.Render(http.StatusOK, render)
+}
+
+func (s *Server) serverLifetimeMiddleware(c *gin.Context) {
+	switch c.Request.Method {
+	case "GET", "HEAD":
+		// hurray!
+	default:
+		c.AbortWithStatus(http.StatusMethodNotAllowed)
+		return
 	}
 
-	_, _ = buf.WriteTo(w)
-	return nil
-}
+	ifModifiedSince := c.GetHeader("If-Modified-Since")
+	if ifModifiedSince != "" {
+		if parsed, err := time.Parse(time.RFC1123, ifModifiedSince); err == nil {
+			if !parsed.Before(s.start) {
+				c.Header("X-Cache", "HIT")
+				c.AbortWithStatus(http.StatusNotModified)
+			} else {
+				c.Header("X-Cache", "MISS")
+			}
+		} else {
+			logrus.WithField("If-Modified-Since", ifModifiedSince).Warn("invalid If-Modified-Since header")
+		}
+	}
 
-func (x *logoSVG) WriteContentType(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "image/svg+xml")
+	c.Header("Last-Modified", s.start.Format(time.RFC1123))
+	c.Next()
 }
