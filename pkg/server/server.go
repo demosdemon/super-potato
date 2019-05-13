@@ -1,6 +1,8 @@
 package server
 
 import (
+	"bytes"
+	"html/template"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -78,6 +80,8 @@ func (s *Server) register() {
 			c.Abort()
 		}
 	}))
+
+	s.GET("/logo.svg", s.getLogoSVG)
 }
 
 func (s *Server) root(c *gin.Context) {
@@ -123,4 +127,43 @@ func (s *Server) getUser(c *gin.Context) {
 	}
 	logrus.WithFields(logrus.Fields(rv)).Trace("getUser")
 	s.negotiate(c, http.StatusOK, rv)
+}
+
+func (s *Server) getLogoSVG(c *gin.Context) {
+	c.Render(http.StatusOK, &logoSVG{
+		Background: c.DefaultQuery("background", "#0a0a0a"),
+		Foreground: c.DefaultQuery("foreground", "#fff"),
+	})
+}
+
+const logoSVGTemplate = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
+<defs><style>.background {fill: {{ .Background }};}.foreground {fill: {{ .Foreground }};}</style>
+</defs>
+<rect class="background" width="50" height="50"/>
+<rect class="foreground" x="10.73" y="10.72" width="28.55" height="11.35"/>
+<rect class="foreground" x="10.73" y="35.42" width="28.55" height="3.86"/>
+<rect class="foreground" x="10.73" y="25.74" width="28.55" height="5.82"/>
+</svg>
+`
+
+type logoSVG struct {
+	Background string
+	Foreground string
+}
+
+func (x *logoSVG) Render(w http.ResponseWriter) error {
+	x.WriteContentType(w)
+	var buf bytes.Buffer
+	tpl := template.Must(template.New("").Parse(logoSVGTemplate))
+	err := tpl.Execute(&buf, x)
+	if err != nil {
+		return err
+	}
+
+	_, _ = buf.WriteTo(w)
+	return nil
+}
+
+func (x *logoSVG) WriteContentType(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "image/svg+xml")
 }

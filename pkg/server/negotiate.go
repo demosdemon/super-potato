@@ -46,23 +46,7 @@ const (
 	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/styles/default.min.css">
 </head>
 <body>
-	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" class="logo">
-		<defs>
-			<style>
-				.background {
-					fill: #ccc;
-				}
-
-				.foreground {
-					fill: #eee;
-				}
-			</style>
-		</defs>
-		<rect class="background" width="50" height="50"/>
-		<rect class="foreground" x="10.73" y="10.72" width="28.55" height="11.35"/>
-		<rect class="foreground" x="10.73" y="35.42" width="28.55" height="3.86"/>
-		<rect class="foreground" x="10.73" y="25.74" width="28.55" height="5.82"/>
-	</svg>
+	<img class="logo" src="/logo.svg?background=%%23ccc&foreground=%%23eee" alt="">
 	<div class="markdown">%s</div>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/highlight.min.js"></script>
 	<script>hljs.initHighlighting();</script>
@@ -121,6 +105,7 @@ func getRenderer(format string, data interface{}, c *gin.Context, code int) rend
 }
 
 func (p pretty) Render(w http.ResponseWriter) error {
+	p.WriteContentType(w)
 	var format string
 	var formatted []byte
 	var err error
