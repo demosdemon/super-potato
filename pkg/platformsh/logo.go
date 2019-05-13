@@ -3,8 +3,6 @@ package platformsh
 import (
 	"bytes"
 	"encoding/xml"
-	"github.com/harukasan/go-libwebp/webp"
-	"github.com/llgcode/draw2d/draw2dsvg"
 	"html/template"
 	"image"
 	"image/color"
@@ -16,9 +14,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
+	"github.com/harukasan/go-libwebp/webp"
 	"github.com/llgcode/draw2d"
 	"github.com/llgcode/draw2d/draw2dimg"
 	"github.com/llgcode/draw2d/draw2dkit"
+	"github.com/llgcode/draw2d/draw2dsvg"
 	"github.com/pkg/errors"
 	"golang.org/x/image/tiff"
 	"gopkg.in/go-playground/colors.v1"
