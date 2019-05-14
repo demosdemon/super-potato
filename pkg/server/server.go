@@ -45,6 +45,7 @@ type Server struct {
 func GetSecret(env platformsh.Environment) []byte {
 	entropy, err := env.ProjectEntropy()
 	if err == nil {
+		logrus.WithField("entropy", entropy).Debug("found project entropy")
 		if rv, err := base32.StdEncoding.DecodeString(entropy); err == nil {
 			return rv
 		} else {
@@ -61,17 +62,23 @@ func GetSecret(env platformsh.Environment) []byte {
 }
 
 func GetSessionStore(env platformsh.Environment) sessions.Store {
-	secret := GetSecret(env)
+	secret := GetSecret(env) // TODO: rotate secret?
 	var store sessions.Store
 	if rels, err := env.Relationships(); err == nil {
 		if rels, ok := rels["sessions"]; ok && len(rels) > 0 {
 			rel := rels[0]
-			sess, err := mgo.Dial(rel.URL(false, false))
-			if err != nil {
-				logrus.WithField("err", err).Panic("failed to connect to mongo")
+			for count := 0; count < 10; count++ {
+				sess, err := mgo.Dial(rel.URL(false, false))
+				if err == nil {
+					col := sess.DB("").C("sessions")
+					store = mongo.NewStore(col, OneYear, true, secret)
+					break
+				}
+				logrus.WithFields(logrus.Fields{
+					"attempt": count + 1,
+					"err":     err,
+				}).Warn("failed to connect to mongo server")
 			}
-			col := sess.DB("").C("sessions")
-			store = mongo.NewStore(col, OneYear, true, secret)
 		} else {
 			logrus.Warn("unable to locate `sessions` relationship")
 		}
@@ -79,6 +86,7 @@ func GetSessionStore(env platformsh.Environment) sessions.Store {
 		logrus.WithField("err", err).Warn("unable to determine relationships")
 	}
 	if store == nil {
+		logrus.Warn("using cookie session store")
 		store = cookie.NewStore(secret)
 	}
 	store.Options(sessions.Options{
@@ -95,11 +103,16 @@ func New(app *app.App) *Server {
 	env := platformsh.NewEnvironment("PLATFORM_")
 	store := GetSessionStore(env)
 
+	sessionCookie, ok := env.Variable("session-cookie")
+	if !ok {
+		sessionCookie = "super-potato"
+	}
+
 	engine := gin.New()
 	engine.Use(
 		gin.Logger(),
 		gin.Recovery(),
-		sessions.Sessions("super-potato", store),
+		sessions.Sessions(sessionCookie.(string), store),
 	)
 
 	s := &Server{
