@@ -4,3 +4,4 @@ storage:
 
 redis-sessions:
   type: redis-persistent:5.0
+  disk: 1024
