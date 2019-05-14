@@ -63,7 +63,7 @@ func GetSecret(env platformsh.Environment) []byte {
 
 func mongoURL(rel platformsh.Relationship) string {
 	var b strings.Builder
-	b.WriteString("mongo://")
+	b.WriteString("mongodb://")
 	//if rel.Username != "" {
 	//	b.WriteString(rel.Username)
 	//	if rel.Password != "" {
