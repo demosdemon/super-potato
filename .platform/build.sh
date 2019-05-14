@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
 set -eux
-export CGO_ENABLED=0
-time go build -v -a -ldflags '-s -w -extldflags "-static"' .
+time go get .
+time go build -v -a -ldflags '-s -w' .
 ls -l super-potato
