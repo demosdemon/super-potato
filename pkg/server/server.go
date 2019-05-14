@@ -64,14 +64,14 @@ func GetSecret(env platformsh.Environment) []byte {
 func mongoURL(rel platformsh.Relationship) string {
 	var b strings.Builder
 	b.WriteString("mongo://")
-	if rel.Username != "" {
-		b.WriteString(rel.Username)
-		if rel.Password != "" {
-			b.WriteString(":")
-			b.WriteString(rel.Password)
-		}
-		b.WriteString("@")
-	}
+	//if rel.Username != "" {
+	//	b.WriteString(rel.Username)
+	//	if rel.Password != "" {
+	//		b.WriteString(":")
+	//		b.WriteString(rel.Password)
+	//	}
+	//	b.WriteString("@")
+	//}
 	b.WriteString(rel.Host)
 	if rel.Port > 0 {
 		fmt.Fprintf(&b, ":%d", rel.Port)
