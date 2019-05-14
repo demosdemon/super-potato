@@ -37,7 +37,7 @@ type EnvironmentAPI interface {
 
 func (e *environment) Application() (*Application, error) {
 	name := e.Prefix() + "APPLICATION"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return nil, missingEnvironment(name)
 	}
@@ -58,7 +58,7 @@ func (e *environment) Application() (*Application, error) {
 
 func (e *environment) ApplicationName() (string, error) {
 	name := e.Prefix() + "APPLICATION_NAME"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -68,7 +68,7 @@ func (e *environment) ApplicationName() (string, error) {
 
 func (e *environment) AppName() (string, error) {
 	name := e.Prefix() + "APPLICATION_NAME"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -78,7 +78,7 @@ func (e *environment) AppName() (string, error) {
 
 func (e *environment) AppCommand() (string, error) {
 	name := e.Prefix() + "APP_COMMAND"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -88,7 +88,7 @@ func (e *environment) AppCommand() (string, error) {
 
 func (e *environment) ApplicationCommand() (string, error) {
 	name := e.Prefix() + "APP_COMMAND"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -98,7 +98,7 @@ func (e *environment) ApplicationCommand() (string, error) {
 
 func (e *environment) AppDir() (string, error) {
 	name := e.Prefix() + "APP_DIR"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -108,7 +108,7 @@ func (e *environment) AppDir() (string, error) {
 
 func (e *environment) Branch() (string, error) {
 	name := e.Prefix() + "BRANCH"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -118,7 +118,7 @@ func (e *environment) Branch() (string, error) {
 
 func (e *environment) Dir() (string, error) {
 	name := e.Prefix() + "DIR"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -128,7 +128,7 @@ func (e *environment) Dir() (string, error) {
 
 func (e *environment) DocumentRoot() (string, error) {
 	name := e.Prefix() + "DOCUMENT_ROOT"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -138,7 +138,7 @@ func (e *environment) DocumentRoot() (string, error) {
 
 func (e *environment) Environment() (string, error) {
 	name := e.Prefix() + "ENVIRONMENT"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -148,7 +148,7 @@ func (e *environment) Environment() (string, error) {
 
 func (e *environment) Port() (string, error) {
 	name := "PORT"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -158,7 +158,7 @@ func (e *environment) Port() (string, error) {
 
 func (e *environment) Project() (string, error) {
 	name := e.Prefix() + "PROJECT"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -168,7 +168,7 @@ func (e *environment) Project() (string, error) {
 
 func (e *environment) ProjectEntropy() (string, error) {
 	name := e.Prefix() + "PROJECT_ENTROPY"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -178,7 +178,7 @@ func (e *environment) ProjectEntropy() (string, error) {
 
 func (e *environment) Relationships() (Relationships, error) {
 	name := e.Prefix() + "RELATIONSHIPS"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return nil, missingEnvironment(name)
 	}
@@ -199,7 +199,7 @@ func (e *environment) Relationships() (Relationships, error) {
 
 func (e *environment) Routes() (Routes, error) {
 	name := e.Prefix() + "ROUTES"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return nil, missingEnvironment(name)
 	}
@@ -220,7 +220,7 @@ func (e *environment) Routes() (Routes, error) {
 
 func (e *environment) SMTPHost() (string, error) {
 	name := e.Prefix() + "SMTP_HOST"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -230,7 +230,7 @@ func (e *environment) SMTPHost() (string, error) {
 
 func (e *environment) Socket() (string, error) {
 	name := "SOCKET"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -240,7 +240,7 @@ func (e *environment) Socket() (string, error) {
 
 func (e *environment) TreeID() (string, error) {
 	name := e.Prefix() + "TREE_ID"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -250,7 +250,7 @@ func (e *environment) TreeID() (string, error) {
 
 func (e *environment) Variables() (JSONObject, error) {
 	name := e.Prefix() + "VARIABLES"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return nil, missingEnvironment(name)
 	}
@@ -271,7 +271,7 @@ func (e *environment) Variables() (JSONObject, error) {
 
 func (e *environment) Vars() (JSONObject, error) {
 	name := e.Prefix() + "VARIABLES"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return nil, missingEnvironment(name)
 	}
@@ -292,7 +292,7 @@ func (e *environment) Vars() (JSONObject, error) {
 
 func (e *environment) XClientCert() (string, error) {
 	name := "X_CLIENT_CERT"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -302,7 +302,7 @@ func (e *environment) XClientCert() (string, error) {
 
 func (e *environment) XClientDN() (string, error) {
 	name := "X_CLIENT_DN"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -312,7 +312,7 @@ func (e *environment) XClientDN() (string, error) {
 
 func (e *environment) XClientIP() (string, error) {
 	name := "X_CLIENT_IP"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -322,7 +322,7 @@ func (e *environment) XClientIP() (string, error) {
 
 func (e *environment) XClientSSL() (string, error) {
 	name := "X_CLIENT_SSL"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}
@@ -332,7 +332,7 @@ func (e *environment) XClientSSL() (string, error) {
 
 func (e *environment) XClientVerify() (string, error) {
 	name := "X_CLIENT_VERIFY"
-	value, ok := e.lookup(name)
+	value, ok := e.Lookup(name)
 	if !ok {
 		return "", missingEnvironment(name)
 	}

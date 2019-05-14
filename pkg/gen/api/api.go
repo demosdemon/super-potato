@@ -28,22 +28,31 @@ func NewCollection(r io.Reader) (gen.Renderer, error) {
 }
 
 func (l Collection) Render(w io.Writer) error {
-	file := NewFile("serve")
+	file := NewFile("server")
 	file.HeaderComment("This file is generated - do not edit!")
 	file.Line()
 
-	file.Func().Params(receiver()).Id("addGeneratedRoutes").Params().BlockFunc(func(g *Group) {
+	/*
+		func (s *Server) registerGeneratedRoutes(r gin.IRoutes) {
+			r.GET("application", s.getApplication)
+			r.GET("app", s.getApplication)
+		}
+	*/
+
+	file.Func().Params(receiver()).Id("registerGeneratedRoutes").Params(
+		Id("r").Qual(ginPath, "IRoutes"),
+	).BlockFunc(func(g *Group) {
 		for _, v := range l {
 			name := "get" + v.Name
 			file.Add(getterDefinition(v, name))
-			g.Id("x").Dot("routes").Dot("GET").Call(
+			g.Id("r").Dot("GET").Call(
 				Lit(strcase.ToSnake(v.Name)),
-				Id("x").Dot(name),
+				Id("s").Dot(name),
 			)
 			for _, a := range v.Aliases {
-				g.Id("x").Dot("routes").Dot("GET").Call(
+				g.Id("r").Dot("GET").Call(
 					Lit(strcase.ToSnake(a)),
-					Id("x").Dot(name),
+					Id("s").Dot(name),
 				)
 			}
 		}
@@ -54,17 +63,17 @@ func (l Collection) Render(w io.Writer) error {
 
 func getterDefinition(v variables.WellKnownVariable, name string) Code {
 	/*
-		func (x *API) getApplication(c *gin.Context) {
+		func (s *Server) getApplication(c *gin.Context) {
 			logrus.Trace("getApplication")
-			obj, err := x.env.Application()
+			obj, err := s.Environment.Application()
 			_, ok := err.(platformsh.MissingEnvironment)
 			switch {
 			case err == nil:
-				negotiate(c, http.StatusOK, obj)
+				s.negotiate(c, http.StatusOK, obj)
 			case ok:
-				negotiate(c, http.StatusNotFound, err)
+				s.negotiate(c, http.StatusNotFound, err)
 			default:
-				negotiate(c, http.StatusInternalServerError, err)
+				s.negotiate(c, http.StatusInternalServerError, err)
 			}
 		}
 	*/
@@ -73,39 +82,29 @@ func getterDefinition(v variables.WellKnownVariable, name string) Code {
 		List(
 			Id("obj"),
 			Err(),
-		).Op(":=").Id("x").Dot("env").Dot(v.Name).Call(),
+		).Op(":=").Id("s").Dot("Environment").Dot(v.Name).Call(),
 		List(
 			Id("_"),
 			Id("ok"),
 		).Op(":=").Err().Assert(Qual(platformshPath, "MissingEnvironment")),
 		Switch().Block(
-			Case(Err().Op("==").Nil()).Block(
-				Id("negotiate").Call(
-					Id("c"),
-					Qual(httpPath, "StatusOK"),
-					Id("obj"),
-				),
-			),
-			Case(Id("ok")).Block(
-				Id("negotiate").Call(
-					Id("c"),
-					Qual(httpPath, "StatusNotFound"),
-					Err(),
-				),
-			),
-			Default().Block(
-				Id("negotiate").Call(
-					Id("c"),
-					Qual(httpPath, "StatusInternalServerError"),
-					Err(),
-				),
-			),
+			Case(Err().Op("==").Nil()).Block(negotiate("StatusOK", Id("obj"))),
+			Case(Id("ok")).Block(negotiate("StatusNotFound", Err())),
+			Default().Block(negotiate("StatusInternalServerError", Err())),
 		),
 	).Line()
 }
 
+func negotiate(status string, result Code) Code {
+	return Id("s").Dot("negotiate").Call(
+		Id("c"),
+		Qual(httpPath, status),
+		result,
+	)
+}
+
 func receiver() Code {
-	return Id("x").Op("*").Id("API")
+	return Id("s").Op("*").Id("Server")
 }
 
 func contextParam() Code {

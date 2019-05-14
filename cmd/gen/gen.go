@@ -8,43 +8,26 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
+	"github.com/demosdemon/super-potato/pkg/app"
 	"github.com/demosdemon/super-potato/pkg/gen"
 	"github.com/demosdemon/super-potato/pkg/gen/api"
 	"github.com/demosdemon/super-potato/pkg/gen/enums"
 	"github.com/demosdemon/super-potato/pkg/gen/variables"
 )
 
-var exit = logrus.Exit
-
 func main() {
-	err := Command(
-		afero.NewOsFs(),
-		exit,
-	).Execute()
-
-	if err == gen.ErrNoChange {
-		err = nil
-	}
-
-	if err != nil {
-		exit(1)
-	}
-
-	exit(0)
+	app.New().Execute(Command)
 }
 
-var (
-	renderMap = gen.RenderMap{
-		"api":       api.NewCollection,
-		"enums":     enums.NewCollection,
-		"variables": variables.NewCollection,
-	}
-)
+var renderMap = gen.RenderMap{
+	"api":       api.NewCollection,
+	"enums":     enums.NewCollection,
+	"variables": variables.NewCollection,
+}
 
-func Command(fs afero.Fs, exit func(int)) *cobra.Command {
+func Command(app *app.App) *cobra.Command {
 	getInput := func(s string) (io.ReadCloser, error) {
 		logrus.Tracef("getInput(%q)", s)
 		switch s {
@@ -53,7 +36,7 @@ func Command(fs afero.Fs, exit func(int)) *cobra.Command {
 		case "/dev/null":
 			return ioutil.NopCloser(new(bytes.Buffer)), nil
 		default:
-			return fs.Open(s)
+			return app.Open(s)
 		}
 	}
 
@@ -95,7 +78,7 @@ func Command(fs afero.Fs, exit func(int)) *cobra.Command {
 			}
 			logrus.Tracef("renderer = %v", renderer)
 
-			err = gen.Render(renderer, output, fs)
+			err = gen.Render(renderer, output, app)
 			logrus.Tracef("render err = %v", err)
 
 			if err != nil && err == gen.ErrNoChange {
@@ -103,7 +86,7 @@ func Command(fs afero.Fs, exit func(int)) *cobra.Command {
 			}
 
 			if err == nil && exitCode {
-				exit(2)
+				app.Exit(2)
 			}
 
 			return err

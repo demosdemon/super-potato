@@ -1,10 +1,7 @@
-memcache:
-  type: memcached:1.4
-
-database:
-  type: mysql:10.2
+storage:
+  type: network-storage:1.0
   disk: 1024
 
-rabbitqueue:
-  type: rabbitmq:3.7
+mongo-sessions:
+  type: mongodb:3.6
   disk: 1024

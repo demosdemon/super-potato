@@ -27,8 +27,6 @@ type Environment interface {
 	Listener() (net.Listener, error)
 }
 
-var DefaultEnvironment = NewEnvironment("PLATFORM_")
-
 type LookupFunc func(string) (string, bool)
 
 type environment struct {
@@ -118,7 +116,7 @@ func (e *environment) Lookup(name string) (string, bool) {
 	}
 
 	e.lookupMu.Lock()
-	fn := e.Lookup
+	fn := e.lookup
 	e.lookupMu.Unlock()
 
 	if fn == nil {

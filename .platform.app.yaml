@@ -3,26 +3,21 @@ type: golang:1.12
 disk: 128
 
 hooks:
-  build: |
-    set -eux
-    time go get ./...
-    time go build -v -a -ldflags '-s -w -extldflags "-static"' ./cmd/gen
-    # fail to build if gen writes a file
-    time ./gen --exit-code enums ./data/enums.yaml ./pkg/platformsh/enums_gen.go
-    time ./gen --exit-code variables ./data/variables.yaml ./pkg/platformsh/environment_gen.go
-    time ./gen --exit-code api ./data/variables.yaml ./cmd/serve/generated.go
-    time go build -v -a -ldflags '-s -w -extldflags "-static"' .
-    time ./super-potato dump -f environ > data/.build_env
-    time ./super-potato dump -f shell > data/build_env.sh
-    ls -l super-potato gen
-  deploy: |
-    time ./super-potato dump -f environ > tmp/.deploy_env
-    time ./super-potato dump -f shell > tmp/deploy_env.sh
+  build: !include
+    type: string
+    path: .platform/build.sh
 
 mounts:
-  tmp:
+  /var/tmp:
     source: tmp
     source_path: tmp
+  /var/log:
+    source: local
+    source_path: log
+  /var/pki:
+    source: service
+    service: storage
+    source_path: pki
 
 web:
   commands:
@@ -38,6 +33,4 @@ web:
       allow: false
 
 relationships:
-  cache: memcache:memcached
-  database: database:mysql
-  queue: rabbitqueue:rabbitmq
+  sessions: mongo-sessions:mongodb

@@ -1,4 +1,4 @@
-package serve
+package server
 
 import (
 	"crypto/x509"
@@ -99,9 +99,26 @@ func (c *Certificate) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error
 	return InvalidCertificate{obj}
 }
 
-func (c *Certificate) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+func (c Certificate) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	v := c.marshal()
 	return e.EncodeElement(v, start)
+}
+
+func (c *Certificate) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var obj platformsh.JSONObject
+	if err := unmarshal(&obj); err != nil {
+		return err
+	}
+
+	if raw, ok := obj["raw"]; ok {
+		return c.UnmarshalText([]byte(raw.(string)))
+	}
+
+	return InvalidCertificate{obj}
+}
+
+func (c Certificate) MarshalYAML() (interface{}, error) {
+	return c.marshal(), nil
 }
 
 func (c Certificate) marshal() interface{} {
