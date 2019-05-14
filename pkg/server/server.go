@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -61,35 +60,13 @@ func GetSecret(env platformsh.Environment) []byte {
 	return secret
 }
 
-func mongoURL(rel platformsh.Relationship) string {
-	var b strings.Builder
-	b.WriteString("mongodb://")
-	//if rel.Username != "" {
-	//	b.WriteString(rel.Username)
-	//	if rel.Password != "" {
-	//		b.WriteString(":")
-	//		b.WriteString(rel.Password)
-	//	}
-	//	b.WriteString("@")
-	//}
-	b.WriteString(rel.Host)
-	if rel.Port > 0 {
-		fmt.Fprintf(&b, ":%d", rel.Port)
-	}
-	if rel.Path != "" {
-		b.WriteString("/")
-		b.WriteString(rel.Path)
-	}
-	return b.String()
-}
-
 func GetSessionStore(env platformsh.Environment) sessions.Store {
 	secret := GetSecret(env)
 	var store sessions.Store
 	if rels, err := env.Relationships(); err == nil {
 		if rels, ok := rels["sessions"]; ok && len(rels) > 0 {
 			rel := rels[0]
-			sess, err := mgo.Dial(mongoURL(rel))
+			sess, err := mgo.Dial(rel.URL(false, false))
 			if err != nil {
 				logrus.WithField("err", err).Panic("failed to connect to mongo")
 			}
