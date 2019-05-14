@@ -72,6 +72,10 @@ func GetSessionStore(env platformsh.Environment) sessions.Store {
 	if store == nil {
 		store = cookie.NewStore(secret)
 	}
+	store.Options(sessions.Options{
+		MaxAge: int((time.Hour * 24) / time.Second),
+		Secure: true,
+	})
 	return store
 }
 
