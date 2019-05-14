@@ -33,4 +33,4 @@ web:
       allow: false
 
 relationships:
-  sessions: redis-sessions:redis
+  sessions: mongo-sessions:mongodb

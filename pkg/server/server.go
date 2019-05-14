@@ -11,20 +11,26 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"runtime"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-contrib/sessions/redis"
+	"github.com/gin-contrib/sessions/mongo"
 	"github.com/gin-gonic/gin"
+	"github.com/globalsign/mgo"
 	"github.com/russross/blackfriday/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 
 	"github.com/demosdemon/super-potato/pkg/app"
 	"github.com/demosdemon/super-potato/pkg/platformsh"
+)
+
+const (
+	OneYear  = 60 * 60 * 24 * 365
+	OneMonth = 60 * 60 * 24 * 30
 )
 
 type Server struct {
@@ -55,14 +61,40 @@ func GetSecret(env platformsh.Environment) []byte {
 	return secret
 }
 
+func mongoURL(rel platformsh.Relationship) string {
+	var b strings.Builder
+	b.WriteString("mongo://")
+	if rel.Username != "" {
+		b.WriteString(rel.Username)
+		if rel.Password != "" {
+			b.WriteString(":")
+			b.WriteString(rel.Password)
+		}
+		b.WriteString("@")
+	}
+	b.WriteString(rel.Host)
+	if rel.Port > 0 {
+		fmt.Fprintf(&b, ":%d", rel.Port)
+	}
+	if rel.Path != "" {
+		b.WriteString("/")
+		b.WriteString(rel.Path)
+	}
+	return b.String()
+}
+
 func GetSessionStore(env platformsh.Environment) sessions.Store {
 	secret := GetSecret(env)
 	var store sessions.Store
 	if rels, err := env.Relationships(); err == nil {
 		if rels, ok := rels["sessions"]; ok && len(rels) > 0 {
 			rel := rels[0]
-			addr := fmt.Sprintf("%s:%d", rel.Host, rel.Port)
-			store, _ = redis.NewStore(runtime.NumCPU()*4, "tcp", addr, rel.Password, secret)
+			sess, err := mgo.Dial(mongoURL(rel))
+			if err != nil {
+				logrus.WithField("err", err).Panic("failed to connect to mongo")
+			}
+			col := sess.DB("").C("sessions")
+			store = mongo.NewStore(col, OneYear, true, secret)
 		} else {
 			logrus.Warn("unable to locate `sessions` relationship")
 		}
@@ -73,7 +105,7 @@ func GetSessionStore(env platformsh.Environment) sessions.Store {
 		store = cookie.NewStore(secret)
 	}
 	store.Options(sessions.Options{
-		MaxAge: int((time.Hour * 24) / time.Second),
+		MaxAge: OneMonth,
 		Secure: true,
 	})
 	return store

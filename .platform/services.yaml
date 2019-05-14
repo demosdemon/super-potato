@@ -2,5 +2,6 @@ storage:
   type: network-storage:1.0
   disk: 1024
 
-redis-sessions:
-  type: redis:5.0
+mongo-sessions:
+  type: mongodb:3.6
+  disk: 1024
