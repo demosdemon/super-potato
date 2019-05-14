@@ -1,13 +1,23 @@
 package server
 
 import (
+	"bytes"
+	"crypto/rand"
+	"encoding/base32"
+	"encoding/json"
+	"expvar"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/russross/blackfriday/v2"
 	"github.com/sirupsen/logrus"
@@ -27,16 +37,56 @@ type Server struct {
 	start time.Time
 }
 
+func GetSecret(env platformsh.Environment) []byte {
+	entropy, err := env.ProjectEntropy()
+	if err == nil {
+		if rv, err := base32.StdEncoding.DecodeString(entropy); err == nil {
+			return rv
+		} else {
+			logrus.WithField("err", err).WithField("entropy", entropy).Warn("error decoding project entropy")
+		}
+	} else {
+		logrus.WithField("err", err).Warn("project entropy not found")
+	}
+
+	secret := make([]byte, 40)
+	_, _ = rand.Read(secret)
+	logrus.WithField("secret", base32.StdEncoding.EncodeToString(secret)).Warn("using random secret")
+	return secret
+}
+
+func GetSessionStore(env platformsh.Environment) sessions.Store {
+	secret := GetSecret(env)
+	var store sessions.Store
+	if rels, err := env.Relationships(); err == nil {
+		if rels, ok := rels["sessions"]; ok && len(rels) > 0 {
+			rel := rels[0]
+			addr := fmt.Sprintf("%s:%d", rel.Host, rel.Port)
+			store, _ = redis.NewStore(runtime.NumCPU()*4, "tcp", addr, rel.Password, secret)
+		} else {
+			logrus.Warn("unable to locate `sessions` relationship")
+		}
+	} else {
+		logrus.WithField("err", err).Warn("unable to determine relationships")
+	}
+	if store == nil {
+		store = cookie.NewStore(secret)
+	}
+	return store
+}
+
 func New(app *app.App) *Server {
 	wd, _ := os.Getwd()
 	fs := afero.NewBasePathFs(app, wd)
 
 	env := platformsh.NewEnvironment("PLATFORM_")
+	store := GetSessionStore(env)
 
 	engine := gin.New()
 	engine.Use(
 		gin.Logger(),
 		gin.Recovery(),
+		sessions.Sessions("super-potato", store),
 	)
 
 	s := &Server{
@@ -68,38 +118,67 @@ func (s *Server) Register() *Server {
 
 func (s *Server) register() {
 	s.Use(s.certifiedUserMiddleware)
+	s.Use(s.sessionDuration)
+
 	s.GET("/", s.root)
 	s.GET("/ping", s.getPing)
 	s.GET("/user", s.getUser)
-	s.registerGeneratedRoutes(s.Group("/env", func(c *gin.Context) {
-		defer c.Next()
-		if !getUser(c).Authenticated() {
-			s.negotiate(c, http.StatusUnauthorized, gin.H{
-				"message": "not logged in",
-				"headers": Header{c.Request.Header},
-			})
-			c.Abort()
-		}
-	}))
-
-	s.GET("/favicon.ico", s.serverLifetimeMiddleware, s.getFaviconICO)
+	s.GET("/debug/vars", s.requireAuth, s.getDebugVars)
+	s.registerGeneratedRoutes(s.Group("/env", s.requireAuth))
+	s.GET("/favicon.ico", s.serverLifetime, s.getFaviconICO)
 	s.GET("/logo.svg", s.getLogoSVG)
-	s.GET("/logo.png", s.serverLifetimeMiddleware, s.getLogoPNG)
+	s.GET("/logo.png", s.serverLifetime, s.getLogoPNG)
+}
+
+func (s *Server) sessionDuration(c *gin.Context) {
+	session := sessions.Default(c)
+
+	ts, _ := session.Get("ts").(string)
+	if ts == "" {
+		ts = time.Now().Format(time.RFC3339Nano)
+		session.Set("ts", ts)
+	}
+	start, _ := time.Parse(time.RFC3339Nano, ts)
+
+	count, _ := session.Get("count").(int)
+	count += 1
+	session.Set("count", count)
+	_ = session.Save()
+
+	elapsed := time.Now().Sub(start)
+	if elapsed >= time.Minute {
+		c.Header("X-Session-Duration", fmt.Sprintf("%v", elapsed))
+	}
+
+	c.Header("X-Session-Count", fmt.Sprintf("%d", count))
+	c.Header("X-Session-Start", start.Format(time.RFC1123))
+	c.Next()
+}
+
+func (s *Server) requireAuth(c *gin.Context) {
+	if !getUser(c).Authenticated() {
+		s.negotiate(c, http.StatusUnauthorized, gin.H{
+			"message": "not logged in",
+			"headers": Header{c.Request.Header},
+		})
+		c.Abort()
+	}
+	c.Next()
 }
 
 func (s *Server) root(c *gin.Context) {
 	fp, err := s.Open("/README.md")
 	if err != nil {
 		if os.IsNotExist(err) {
-			_ = c.AbortWithError(404, err)
+			c.AbortWithError(404, err)
 		} else {
-			_ = c.AbortWithError(500, err)
+			c.AbortWithError(500, err)
 		}
 		return
 	}
 
 	data, err := ioutil.ReadAll(fp)
-	_ = fp.Close()
+	fp.Close()
 
 	if err != nil {
 		_ = c.AbortWithError(500, err)
@@ -109,7 +188,7 @@ func (s *Server) root(c *gin.Context) {
 	output := blackfriday.Run(data)
 	c.Header("Content-Type", "text/html")
 	c.Writer.WriteHeader(200)
-	_, _ = c.Writer.Write(output)
+	c.Writer.Write(output)
 }
 
 func (s *Server) getPing(c *gin.Context) {
@@ -148,7 +227,7 @@ func (s *Server) getFaviconICO(c *gin.Context) {
 
 func (s *Server) getLogoPNG(c *gin.Context) {
 	logo := platformsh.NewRasterLogo()
-	logo.Size = 50
+	logo.Size = 100
 	render := platformsh.RenderRasterLogo{
 		RasterLogo:  logo,
 		ContentType: platformsh.FormatPNG,
@@ -156,7 +235,7 @@ func (s *Server) getLogoPNG(c *gin.Context) {
 	c.Render(http.StatusOK, render)
 }
 
-func (s *Server) serverLifetimeMiddleware(c *gin.Context) {
+func (s *Server) serverLifetime(c *gin.Context) {
 	switch c.Request.Method {
 	case "GET", "HEAD":
 		// hurray!
@@ -181,4 +260,35 @@ func (s *Server) serverLifetimeMiddleware(c *gin.Context) {
 
 	c.Header("Last-Modified", s.start.Format(time.RFC1123))
 	c.Next()
+}
+
+func (s *Server) getDebugVars(c *gin.Context) {
+	var buf bytes.Buffer
+	buf.WriteString("{")
+	first := true
+	expvar.Do(func(kv expvar.KeyValue) {
+		if !first {
+			buf.WriteString(",")
+		}
+		first = false
+		fmt.Fprintf(&buf, "%q: %s", kv.Key, kv.Value)
+	})
+	buf.WriteString("}")
+
+	var kvp gin.H
+	if err := json.Unmarshal(buf.Bytes(), &kvp); err != nil {
+		c.AbortWithError(500, err)
+	}
+
+	s.negotiate(c, 200, kvp)
+}
+
+func (s *Server) cacheControl(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=604800")
+	c.Next()
+}
+
+func (s *Server) etag(c *gin.Context) {
+	c.Next()
+
 }

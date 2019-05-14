@@ -31,3 +31,6 @@ web:
     /:
       passthru: true
       allow: false
+
+relationships:
+  sessions: redis-sessions:redis
