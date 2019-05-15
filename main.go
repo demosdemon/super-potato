@@ -67,6 +67,6 @@ func Command(app *app.App) *cobra.Command {
 
 func main() {
 	inst, cancel := app.New(context.Background())
-	defer cancel()
 	inst.Execute(Command)
+	cancel()
 }
