@@ -1,0 +1,10 @@
+jobs:
+  - template: enums
+    input: ./data/enums.yaml
+    output: ./pkg/platformsh/enums_gen.go
+  - template: variables
+    input: ./data/variables.yaml
+    output: ./pkg/platformsh/environment_gen.go
+  - template: api
+    input: ./data/variables.yaml
+    output: ./pkg/server/generated.go

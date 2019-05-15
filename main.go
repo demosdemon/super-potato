@@ -1,14 +1,15 @@
-//go:generate time go run ./cmd/gen enums ./data/enums.yaml ./pkg/platformsh/enums_gen.go
-//go:generate time go run ./cmd/gen variables ./data/variables.yaml ./pkg/platformsh/environment_gen.go
-//go:generate time go run ./cmd/gen api ./data/variables.yaml ./pkg/server/generated.go
+//go:generate time go run ./gen
 
 package main
 
 import (
+	"context"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/demosdemon/super-potato/cmd/dump"
+	"github.com/demosdemon/super-potato/cmd/scrape"
 	"github.com/demosdemon/super-potato/cmd/serve"
 	"github.com/demosdemon/super-potato/pkg/app"
 )
@@ -39,10 +40,13 @@ func Command(app *app.App) *cobra.Command {
 
 	rv.AddCommand(dump.Command(app))
 	rv.AddCommand(serve.Command(app))
+	rv.AddCommand(scrape.Command(app))
 
 	return &rv
 }
 
 func main() {
-	app.New().Execute(Command)
+	inst, cancel := app.New(context.Background())
+	defer cancel()
+	inst.Execute(Command)
 }

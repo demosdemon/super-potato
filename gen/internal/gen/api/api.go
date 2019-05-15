@@ -7,8 +7,8 @@ import (
 	"github.com/iancoleman/strcase"
 	"gopkg.in/yaml.v2"
 
-	"github.com/demosdemon/super-potato/pkg/gen"
-	"github.com/demosdemon/super-potato/pkg/gen/variables"
+	"github.com/demosdemon/super-potato/gen/internal/gen"
+	"github.com/demosdemon/super-potato/gen/internal/gen/variables"
 )
 
 const (
@@ -17,6 +17,10 @@ const (
 	ginPath        = "github.com/gin-gonic/gin"
 	httpPath       = "net/http"
 )
+
+func init() {
+	gen.DefaultRenderMap.Register("api", NewCollection)
+}
 
 type Collection []variables.WellKnownVariable
 

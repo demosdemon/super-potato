@@ -25,6 +25,8 @@ type Environment interface {
 	ReadDotEnv()
 
 	Listener() (net.Listener, error)
+
+	Variable(key string) (interface{}, bool)
 }
 
 type LookupFunc func(string) (string, bool)
@@ -154,4 +156,13 @@ func (e *environment) Listener() (net.Listener, error) {
 
 	logrus.Debug("found neither SOCKET nor PORT")
 	return nil, agg
+}
+
+func (e *environment) Variable(key string) (interface{}, bool) {
+	vars, err := e.Variables()
+	if err != nil {
+		return nil, false
+	}
+	v, ok := vars[key]
+	return v, ok
 }
