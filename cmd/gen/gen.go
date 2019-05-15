@@ -32,7 +32,7 @@ var renderMap = gen.RenderMap{
 
 func Command(app *app.App) *cobra.Command {
 	getInput := func(s string) (io.ReadCloser, error) {
-		logrus.Tracef("getInput(%q)", s)
+		logrus.WithField("input", s).Trace()
 		switch s {
 		case "-", "/dev/stdin":
 			return ioutil.NopCloser(os.Stdin), nil
@@ -56,7 +56,7 @@ func Command(app *app.App) *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			template := args[0]
-			logrus.Tracef("template = %q", template)
+			logrus.WithField("template", template).Trace()
 
 			input, err := getInput(args[1])
 			if err != nil {
@@ -65,7 +65,7 @@ func Command(app *app.App) *cobra.Command {
 			defer input.Close()
 
 			output := args[2]
-			logrus.Tracef("output = %v", output)
+			logrus.WithField("output", output).Trace()
 
 			flags := cmd.Flags()
 
@@ -73,16 +73,16 @@ func Command(app *app.App) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			logrus.Tracef("exitCode = %v", exitCode)
+			logrus.WithField("exitCode", exitCode).Trace()
 
 			renderer, err := renderMap[template](input)
 			if err != nil {
 				return err
 			}
-			logrus.Tracef("renderer = %v", renderer)
+			logrus.WithField("renderer", renderer).Trace()
 
 			err = gen.Render(renderer, output, app)
-			logrus.Tracef("render err = %v", err)
+			logrus.WithField("err", err).Trace()
 
 			if err != nil && err == gen.ErrNoChange {
 				return nil
