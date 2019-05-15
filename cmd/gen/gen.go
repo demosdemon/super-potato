@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -18,7 +19,9 @@ import (
 )
 
 func main() {
-	app.New().Execute(Command)
+	inst, cancel := app.New(context.Background())
+	defer cancel()
+	inst.Execute(Command)
 }
 
 var renderMap = gen.RenderMap{

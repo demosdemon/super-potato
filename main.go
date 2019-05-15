@@ -5,10 +5,12 @@
 package main
 
 import (
+	"context"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/demosdemon/super-potato/cmd/dump"
+	"github.com/demosdemon/super-potato/cmd/scrape"
 	"github.com/demosdemon/super-potato/cmd/serve"
 	"github.com/demosdemon/super-potato/pkg/app"
 )
@@ -39,10 +41,13 @@ func Command(app *app.App) *cobra.Command {
 
 	rv.AddCommand(dump.Command(app))
 	rv.AddCommand(serve.Command(app))
+	rv.AddCommand(scrape.Command(app))
 
 	return &rv
 }
 
 func main() {
-	app.New().Execute(Command)
+	inst, cancel := app.New(context.Background())
+	defer cancel()
+	inst.Execute(Command)
 }
