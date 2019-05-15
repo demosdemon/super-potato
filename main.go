@@ -1,6 +1,6 @@
-//go:generate time go run ./cmd/gen enums ./data/enums.yaml ./pkg/platformsh/enums_gen.go
-//go:generate time go run ./cmd/gen variables ./data/variables.yaml ./pkg/platformsh/environment_gen.go
-//go:generate time go run ./cmd/gen api ./data/variables.yaml ./pkg/server/generated.go
+//go:generate time go run ./gen enums ./data/enums.yaml ./pkg/platformsh/enums_gen.go
+//go:generate time go run ./gen variables ./data/variables.yaml ./pkg/platformsh/environment_gen.go
+//go:generate time go run ./gen api ./data/variables.yaml ./pkg/server/generated.go
 
 package main
 

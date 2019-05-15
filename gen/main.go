@@ -7,11 +7,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/demosdemon/super-potato/gen/internal/gen"
+	"github.com/demosdemon/super-potato/gen/internal/gen/api"
+	"github.com/demosdemon/super-potato/gen/internal/gen/enums"
+	"github.com/demosdemon/super-potato/gen/internal/gen/variables"
 	"github.com/demosdemon/super-potato/pkg/app"
-	"github.com/demosdemon/super-potato/pkg/gen"
-	"github.com/demosdemon/super-potato/pkg/gen/api"
-	"github.com/demosdemon/super-potato/pkg/gen/enums"
-	"github.com/demosdemon/super-potato/pkg/gen/variables"
 )
 
 func main() {
