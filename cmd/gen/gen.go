@@ -20,8 +20,8 @@ import (
 
 func main() {
 	inst, cancel := app.New(context.Background())
-	defer cancel()
 	inst.Execute(Command)
+	cancel()
 }
 
 var renderMap = gen.RenderMap{
