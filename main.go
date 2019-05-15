@@ -1,4 +1,4 @@
-//go:generate time go run ./gen --exit-code
+//go:generate time go run ./gen
 
 package main
 
