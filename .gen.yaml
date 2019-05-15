@@ -1,4 +1,3 @@
-# enums ./data/enums.yaml ./pkg/platformsh/enums_gen.go variables ./data/variables.yaml ./pkg/platformsh/environment_gen.go api ./data/variables.yaml ./pkg/server/generated.go
 jobs:
   - template: enums
     input: ./data/enums.yaml
