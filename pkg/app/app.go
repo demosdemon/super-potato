@@ -1,8 +1,10 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,6 +23,14 @@ type App struct {
 	Stdin  io.Reader
 	Stdout io.Writer
 	Stderr io.Writer
+}
+
+type nopWriterCloser struct {
+	io.Writer
+}
+
+func (nopWriterCloser) Close() error {
+	return nil
 }
 
 func init() {
@@ -70,4 +80,28 @@ func CancelOnSignal(ctx context.Context, signals ...os.Signal) (context.Context,
 	}()
 
 	return ctx, cancel
+}
+
+func (a *App) GetInput(s string) (io.ReadCloser, error) {
+	switch s {
+	case "-", "/dev/stdin":
+		return ioutil.NopCloser(a.Stdin), nil
+	case "/dev/null":
+		return ioutil.NopCloser(new(bytes.Buffer)), nil
+	default:
+		return a.Open(s)
+	}
+}
+
+func (a *App) GetOutput(s string) (io.WriteCloser, error) {
+	switch s {
+	case "-", "/dev/stdout":
+		return nopWriterCloser{a.Stdout}, nil
+	case "/dev/stderr":
+		return nopWriterCloser{a.Stderr}, nil
+	case "/dev/null":
+		return nopWriterCloser{ioutil.Discard}, nil
+	default:
+		return a.Create(s)
+	}
 }

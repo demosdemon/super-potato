@@ -1,12 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"io"
-	"io/ioutil"
-	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -31,18 +27,6 @@ var renderMap = gen.RenderMap{
 }
 
 func Command(app *app.App) *cobra.Command {
-	getInput := func(s string) (io.ReadCloser, error) {
-		logrus.WithField("input", s).Trace()
-		switch s {
-		case "-", "/dev/stdin":
-			return ioutil.NopCloser(os.Stdin), nil
-		case "/dev/null":
-			return ioutil.NopCloser(new(bytes.Buffer)), nil
-		default:
-			return app.Open(s)
-		}
-	}
-
 	rv := cobra.Command{
 		Use: "gen TEMPLATE INPUT OUTPUT",
 		Args: func(cmd *cobra.Command, args []string) error {
@@ -58,7 +42,7 @@ func Command(app *app.App) *cobra.Command {
 			template := args[0]
 			logrus.WithField("template", template).Trace()
 
-			input, err := getInput(args[1])
+			input, err := app.GetInput(args[1])
 			if err != nil {
 				return err
 			}
