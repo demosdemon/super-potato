@@ -11,6 +11,10 @@ import (
 	"github.com/demosdemon/super-potato/gen/internal/gen"
 )
 
+func init() {
+	gen.DefaultRenderMap.Register("enums", NewCollection)
+}
+
 type Collection []Enum
 
 type Enum struct {

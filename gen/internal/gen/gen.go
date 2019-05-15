@@ -26,7 +26,8 @@ type (
 )
 
 var (
-	ErrNoChange = errors.New("no change detected")
+	ErrNoChange      = errors.New("no change detected")
+	DefaultRenderMap = make(RenderMap)
 )
 
 const (
@@ -85,6 +86,10 @@ func (m RenderMap) Usage() string {
 	keys = Apply(keys, quote)
 	keyString := strings.Join(keys, ", ")
 	return fmt.Sprintf("Specify the template to execute (%s)", keyString)
+}
+
+func (m RenderMap) Register(name string, fn NewRenderer) {
+	m[name] = fn
 }
 
 func Apply(input []string, fn func(string) string) []string {

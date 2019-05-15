@@ -2,15 +2,16 @@ package main
 
 import (
 	"context"
-	"errors"
+	"sync"
+	"sync/atomic"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/demosdemon/super-potato/gen/internal/gen"
-	"github.com/demosdemon/super-potato/gen/internal/gen/api"
-	"github.com/demosdemon/super-potato/gen/internal/gen/enums"
-	"github.com/demosdemon/super-potato/gen/internal/gen/variables"
+	_ "github.com/demosdemon/super-potato/gen/internal/gen/api"
+	_ "github.com/demosdemon/super-potato/gen/internal/gen/enums"
+	_ "github.com/demosdemon/super-potato/gen/internal/gen/variables"
 	"github.com/demosdemon/super-potato/pkg/app"
 )
 
@@ -20,63 +21,94 @@ func main() {
 	cancel()
 }
 
-var renderMap = gen.RenderMap{
-	"api":       api.NewCollection,
-	"enums":     enums.NewCollection,
-	"variables": variables.NewCollection,
+type Job struct {
+	Template string `yaml:"template"`
+	Input    string `yaml:"input"`
+	Output   string `yaml:"output"`
+}
+
+type Config struct {
+	Jobs []Job `yaml:"jobs"`
 }
 
 func Command(app *app.App) *cobra.Command {
 	rv := cobra.Command{
-		Use: "gen TEMPLATE INPUT OUTPUT",
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 3 {
-				return errors.New("expected exactly three arguments")
-			}
-			if _, ok := renderMap[args[0]]; !ok {
-				return errors.New("invalid template name")
-			}
-			return nil
-		},
+		Use:  "gen [CONFIG]",
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			template := args[0]
-			logrus.WithField("template", template).Trace()
+			path := "./.gen.yaml"
+			if len(args) == 1 {
+				path = args[0]
+			}
 
-			input, err := app.GetInput(args[1])
+			var cfg Config
+			err := app.ReadYAML(path, &cfg)
 			if err != nil {
 				return err
 			}
-			defer input.Close()
-
-			output := args[2]
-			logrus.WithField("output", output).Trace()
 
 			flags := cmd.Flags()
-
 			exitCode, err := flags.GetBool("exit-code")
 			if err != nil {
 				return err
 			}
-			logrus.WithField("exitCode", exitCode).Trace()
 
-			renderer, err := renderMap[template](input)
-			if err != nil {
-				return err
+			logrus.WithField("cfg", cfg).WithField("exitCode", exitCode).Trace()
+
+			var hasErr uint32
+			var wg sync.WaitGroup
+			var written uint32
+			for _, j := range cfg.Jobs {
+				wg.Add(1)
+
+				go func(j Job) {
+					defer wg.Done()
+					input, err := app.GetInput(j.Input)
+					if err != nil {
+						atomic.AddUint32(&hasErr, 1)
+						logrus.WithField("j", j).WithField("err", err).Error("unable to open input")
+						return
+					}
+
+					fn, ok := gen.DefaultRenderMap[j.Template]
+					if !ok {
+						atomic.AddUint32(&hasErr, 1)
+						logrus.WithField("j", j).Error("invalid template")
+						return
+					}
+
+					renderer, err := fn(input)
+					input.Close()
+					if err != nil {
+						atomic.AddUint32(&hasErr, 1)
+						logrus.WithField("j", j).WithField("err", err).Error("unable to parse input")
+					}
+
+					err = gen.Render(renderer, j.Output, app)
+					logrus.WithField("j", j).WithField("err", err).Trace()
+
+					switch err {
+					case nil:
+						atomic.AddUint32(&written, 1)
+					case gen.ErrNoChange:
+					default:
+						atomic.AddUint32(&hasErr, 1)
+						logrus.WithField("j", j).WithField("err", err).Error("unable to render template")
+					}
+				}(j)
 			}
-			logrus.WithField("renderer", renderer).Trace()
 
-			err = gen.Render(renderer, output, app)
-			logrus.WithField("err", err).Trace()
+			wg.Wait()
 
-			if err != nil && err == gen.ErrNoChange {
-				return nil
+			if hasErr > 0 {
+				app.Exit(1)
 			}
 
-			if err == nil && exitCode {
-				app.Exit(2)
+			if written > 0 && exitCode {
+				app.Exit(int(written) + 1)
 			}
 
-			return err
+			return nil
 		},
 	}
 

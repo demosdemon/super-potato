@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 )
 
 type Command func(app *App) *cobra.Command
@@ -104,4 +105,19 @@ func (a *App) GetOutput(s string) (io.WriteCloser, error) {
 	default:
 		return a.Create(s)
 	}
+}
+
+func (a *App) ReadYAML(path string, data interface{}) error {
+	fp, err := a.GetInput(path)
+	if err != nil {
+		return err
+	}
+
+	text, err := ioutil.ReadAll(fp)
+	fp.Close()
+	if err != nil {
+		return err
+	}
+
+	return yaml.Unmarshal(text, data)
 }

@@ -10,6 +10,10 @@ import (
 	"github.com/demosdemon/super-potato/gen/internal/gen"
 )
 
+func init() {
+	gen.DefaultRenderMap.Register("variables", NewCollection)
+}
+
 type Collection []WellKnownVariable
 
 type WellKnownVariable struct {

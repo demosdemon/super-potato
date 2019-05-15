@@ -18,6 +18,10 @@ const (
 	httpPath       = "net/http"
 )
 
+func init() {
+	gen.DefaultRenderMap.Register("api", NewCollection)
+}
+
 type Collection []variables.WellKnownVariable
 
 func NewCollection(r io.Reader) (gen.Renderer, error) {
