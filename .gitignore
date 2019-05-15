@@ -16,4 +16,6 @@
 ### Project specific ignore
 /.env
 /super-potato
-/pki
+/var/pki
+/var/tmp
+/var/log
