@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+
 	"github.com/demosdemon/super-potato/cmd/secret"
 
 	"github.com/sirupsen/logrus"

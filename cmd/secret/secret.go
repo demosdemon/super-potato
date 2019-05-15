@@ -6,14 +6,15 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+
 	"github.com/mattn/go-isatty"
 	_ "github.com/octago/sflags/gen/gflag"
 	"github.com/octago/sflags/gen/gpflag"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"io"
-	"os"
-	"strings"
 
 	"github.com/demosdemon/super-potato/pkg/app"
 )
