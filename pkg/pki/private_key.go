@@ -74,3 +74,7 @@ func (pk PrivateKey) MarshalText() ([]byte, error) {
 
 	return pem.EncodeToMemory(block), nil
 }
+
+func (pk *PrivateKey) SetSecret(secret []byte) {
+	pk.secret = secret
+}

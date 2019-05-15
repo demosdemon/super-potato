@@ -107,6 +107,19 @@ func (a *App) GetOutput(s string) (io.WriteCloser, error) {
 	}
 }
 
+func (a *App) Append(s string) (io.WriteCloser, error) {
+	switch s {
+	case "-", "/dev/stdout":
+		return nopWriterCloser{a.Stdout}, nil
+	case "/dev/stderr":
+		return nopWriterCloser{a.Stderr}, nil
+	case "/dev/null":
+		return nopWriterCloser{ioutil.Discard}, nil
+	default:
+		return a.OpenFile(s, os.O_APPEND|os.O_WRONLY, 0644)
+	}
+}
+
 func (a *App) ReadYAML(path string, data interface{}) error {
 	fp, err := a.GetInput(path)
 	if err != nil {

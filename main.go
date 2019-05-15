@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"github.com/demosdemon/super-potato/cmd/secret"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -41,6 +42,7 @@ func Command(app *app.App) *cobra.Command {
 	rv.AddCommand(dump.Command(app))
 	rv.AddCommand(serve.Command(app))
 	rv.AddCommand(scrape.Command(app))
+	rv.AddCommand(secret.Command(app))
 
 	return &rv
 }
