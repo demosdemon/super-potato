@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/mattn/go-isatty"
-	_ "github.com/octago/sflags/gen/gflag"
 	"github.com/octago/sflags/gen/gpflag"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
