@@ -82,6 +82,7 @@ func Command(app *app.App) *cobra.Command {
 					if err != nil {
 						atomic.AddUint32(&hasErr, 1)
 						logrus.WithField("j", j).WithField("err", err).Error("unable to parse input")
+						return
 					}
 
 					err = gen.Render(renderer, j.Output, app)
