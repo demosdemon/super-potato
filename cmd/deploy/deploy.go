@@ -1,18 +1,19 @@
 package deploy
 
 import (
+	"strings"
 	"sync"
 
 	"bitbucket.org/liamstask/goose/lib/goose"
 	_ "github.com/cloudflare/cfssl/certdb/sql"
+	"github.com/lib/pq"
 	"github.com/octago/sflags/gen/gpflag"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/demosdemon/super-potato/pkg/platformsh"
-
 	"github.com/demosdemon/super-potato/pkg/app"
+	"github.com/demosdemon/super-potato/pkg/platformsh"
 )
 
 const migrationsDir = "./vendor/github.com/cloudflare/cfssl/certdb/pg/migrations"
@@ -47,13 +48,18 @@ func (c *Config) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	dbURL := db[0].URL(true, false)
+	dbURL = strings.Replace(dbURL, "pgsql://", "postgresql://", 1)
+	dbOpen, err := pq.ParseURL(dbURL)
+	if err != nil {
+		return errors.Wrap(err, "unable to parse postgresql url")
+	}
 
 	conf := goose.DBConf{
 		MigrationsDir: migrationsDir,
 		Env:           "production",
 		Driver: goose.DBDriver{
 			Name:    "postgres",
-			OpenStr: dbURL,
+			OpenStr: dbOpen,
 			Import:  "github.com/lib/pq",
 			Dialect: &goose.PostgresDialect{},
 		},
