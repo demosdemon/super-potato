@@ -14,7 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
-	"github.com/harukasan/go-libwebp/webp"
+	//"github.com/harukasan/go-libwebp/webp"
 	"github.com/llgcode/draw2d"
 	"github.com/llgcode/draw2d/draw2dimg"
 	"github.com/llgcode/draw2d/draw2dkit"
@@ -33,7 +33,7 @@ const (
 	FormatJPG  = "image/jpeg"
 	FormatPNG  = "image/png"
 	FormatTIFF = "image/tiff"
-	FormatWebP = "image/webp"
+	//FormatWebP = "image/webp"
 )
 
 const logoSVGTemplate = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
@@ -206,9 +206,9 @@ func (x RenderRasterLogo) Render(w http.ResponseWriter) error {
 			err = png.Encode(&buf, m)
 		case FormatTIFF:
 			err = tiff.Encode(&buf, m, nil)
-		case FormatWebP:
-			cfg, _ := webp.ConfigLosslessPreset(7)
-			err = webp.EncodeRGBA(&buf, m, cfg)
+			//case FormatWebP:
+			//	cfg, _ := webp.ConfigLosslessPreset(7)
+			//	err = webp.EncodeRGBA(&buf, m, cfg)
 		}
 
 		if err != nil {
