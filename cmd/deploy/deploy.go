@@ -1,12 +1,10 @@
 package deploy
 
 import (
-	"strings"
 	"sync"
 
 	"bitbucket.org/liamstask/goose/lib/goose"
 	_ "github.com/cloudflare/cfssl/certdb/sql"
-	"github.com/lib/pq"
 	"github.com/octago/sflags/gen/gpflag"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -42,16 +40,9 @@ func (c *Config) Run(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "unable to locate relationships")
 	}
 
-	db, ok := rels["database"]
-	if !ok && len(db) > 0 {
-		return errors.New("unable to locate database relationship")
-	}
-
-	dbURL := db[0].URL(true, false)
-	dbURL = strings.Replace(dbURL, "pgsql://", "postgresql://", 1)
-	dbOpen, err := pq.ParseURL(dbURL)
+	dbOpen, err := rels.Postgresql("database")
 	if err != nil {
-		return errors.Wrap(err, "unable to parse postgresql url")
+		return errors.Wrap(err, "unable to get database connection string")
 	}
 
 	conf := goose.DBConf{

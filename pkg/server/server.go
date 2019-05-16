@@ -8,7 +8,6 @@ import (
 	"expvar"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -19,7 +18,6 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/sessions/mongo"
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo"
 	"github.com/russross/blackfriday/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -65,26 +63,12 @@ func GetSessionStore(env platformsh.Environment) sessions.Store {
 	secret := GetSecret(env) // TODO: rotate secret?
 	var store sessions.Store
 	if rels, err := env.Relationships(); err == nil {
-		if rels, ok := rels["sessions"]; ok && len(rels) > 0 {
-			rel := rels[0]
-			mgo.SetLogger(log.New(os.Stderr, "mongo", log.LstdFlags))
-			for count := 0; count < 10; count++ {
-				if sess, err := mgo.Dial(rel.URL(false, false)); err == nil {
-					db := sess.DB(rel.Path)
-					if err := db.Login(rel.Username, rel.Password); err != nil {
-						logrus.WithError(err).Warn("error logging into mongo db")
-					}
-					col := db.C("sessions")
-					store = mongo.NewStore(col, OneYear, true, secret)
-					break
-				}
-				logrus.WithFields(logrus.Fields{
-					"attempt": count + 1,
-					"err":     err,
-				}).Warn("failed to connect to mongo server")
-			}
+		db, err := rels.MongoDB("sessions")
+		if err == nil {
+			col := db.C("sessions")
+			store = mongo.NewStore(col, OneYear, true, secret)
 		} else {
-			logrus.Warn("unable to locate `sessions` relationship")
+			logrus.WithError(err).Warn("unable to connect to mongo server")
 		}
 	} else {
 		logrus.WithField("err", err).Warn("unable to determine relationships")
