@@ -11,12 +11,28 @@ import (
 	"strings"
 
 	"github.com/mattn/go-isatty"
-	"github.com/octago/sflags/gen/gpflag"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/demosdemon/super-potato/pkg/app"
 )
+
+func RandBytes(count int) ([]byte, error) {
+	rv := make([]byte, count)
+	for read := 0; read < count; {
+		n, err := rand.Read(rv[read:])
+		logrus.WithFields(logrus.Fields{
+			"read": read,
+			"n":    n,
+			"err":  err,
+		}).Trace("rand.Read")
+		read += n
+		if err != nil {
+			return nil, err
+		}
+	}
+	return rv, nil
+}
 
 type Config struct {
 	*app.App `flag:"-"`
@@ -25,17 +41,30 @@ type Config struct {
 	Bytes    int    `flag:"bytes b" desc:"The number of bytes to generate (n bits / 8 bits per byte)"`
 }
 
+func New(app *app.App) app.Config {
+	return &Config{
+		App:    app,
+		Format: "base32",
+		Output: "-",
+		Bytes:  40,
+	}
+}
+
+func (c *Config) Use() string {
+	return "secret"
+}
+
+func (c *Config) Args(cmd *cobra.Command, args []string) error {
+	return cobra.NoArgs(cmd, args)
+}
+
 func (c *Config) Run(cmd *cobra.Command, args []string) error {
 	rv, err := RandBytes(c.Bytes)
 	if err != nil {
 		return err
 	}
 
-	n, err := c.Write(rv)
-	if n < c.Bytes {
-		return io.ErrShortWrite
-	}
-
+	_, err = c.Write(rv)
 	return err
 }
 
@@ -82,45 +111,6 @@ func (c *Config) Write(data []byte) (int, error) {
 	}
 
 	return n, nil
-}
-
-func RandBytes(count int) ([]byte, error) {
-	rv := make([]byte, count)
-	for read := 0; read < count; {
-		n, err := rand.Read(rv[read:])
-		logrus.WithFields(logrus.Fields{
-			"read": read,
-			"n":    n,
-			"err":  err,
-		}).Trace("rand.Read")
-		read += n
-		if err != nil {
-			return nil, err
-		}
-	}
-	return rv, nil
-}
-
-func Command(app *app.App) *cobra.Command {
-	cfg := Config{
-		App:    app,
-		Format: "base32",
-		Output: "-",
-		Bytes:  40,
-	}
-
-	rv := cobra.Command{
-		Use:  "secret",
-		Args: cobra.NoArgs,
-		RunE: cfg.Run,
-	}
-
-	err := gpflag.ParseTo(&cfg, rv.Flags())
-	if err != nil {
-		logrus.WithField("err", err).Fatal("failed to parse config flags")
-	}
-
-	return &rv
 }
 
 func istty(w io.Writer) bool {

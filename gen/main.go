@@ -17,7 +17,7 @@ import (
 
 func main() {
 	inst, cancel := app.New(context.Background())
-	inst.Execute(Command)
+	inst.Execute(&Config{App: inst})
 	cancel()
 }
 
@@ -27,94 +27,93 @@ type Job struct {
 	Output   string `yaml:"output"`
 }
 
-type Config struct {
+type ConfigFile struct {
 	Jobs []Job `yaml:"jobs"`
 }
 
-func Command(app *app.App) *cobra.Command {
-	rv := cobra.Command{
-		Use:  "gen [CONFIG]",
-		Args: cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			path := "./.gen.yaml"
-			if len(args) == 1 {
-				path = args[0]
-			}
+type Config struct {
+	*app.App `flag:"-"`
+	ExitCode bool `flag:"exit-code" desc:"If specified, the exit code will be the number of files written plus 1. An exit code of 1 indicates program error."`
+}
 
-			var cfg Config
-			err := app.ReadYAML(path, &cfg)
-			if err != nil {
-				return err
-			}
+func (c *Config) Use() string {
+	return "gen [CONFIG]"
+}
 
-			flags := cmd.Flags()
-			exitCode, err := flags.GetBool("exit-code")
-			if err != nil {
-				return err
-			}
+func (c *Config) Args(cmd *cobra.Command, args []string) error {
+	return cobra.MaximumNArgs(1)(cmd, args)
+}
 
-			logrus.WithField("cfg", cfg).WithField("exitCode", exitCode).Trace()
-
-			var hasErr uint32
-			var wg sync.WaitGroup
-			var written uint32
-			for _, j := range cfg.Jobs {
-				wg.Add(1)
-
-				go func(j Job) {
-					defer wg.Done()
-					input, err := app.GetInput(j.Input)
-					if err != nil {
-						atomic.AddUint32(&hasErr, 1)
-						logrus.WithField("j", j).WithField("err", err).Error("unable to open input")
-						return
-					}
-
-					fn, ok := gen.DefaultRenderMap[j.Template]
-					if !ok {
-						atomic.AddUint32(&hasErr, 1)
-						logrus.WithField("j", j).Error("invalid template")
-						return
-					}
-
-					renderer, err := fn(input)
-					input.Close()
-					if err != nil {
-						atomic.AddUint32(&hasErr, 1)
-						logrus.WithField("j", j).WithField("err", err).Error("unable to parse input")
-						return
-					}
-
-					err = gen.Render(renderer, j.Output, app)
-					logrus.WithField("j", j).WithField("err", err).Trace()
-
-					switch err {
-					case nil:
-						atomic.AddUint32(&written, 1)
-					case gen.ErrNoChange:
-					default:
-						atomic.AddUint32(&hasErr, 1)
-						logrus.WithField("j", j).WithField("err", err).Error("unable to render template")
-					}
-				}(j)
-			}
-
-			wg.Wait()
-
-			if hasErr > 0 {
-				app.Exit(1)
-			}
-
-			if written > 0 && exitCode {
-				app.Exit(int(written) + 1)
-			}
-
-			return nil
-		},
+func (c *Config) Run(cmd *cobra.Command, args []string) error {
+	path := "./.gen.yaml"
+	if len(args) == 1 {
+		path = args[0]
 	}
 
-	flags := rv.Flags()
-	flags.Bool("exit-code", false, gen.ExitCodeUsage)
+	var cfg ConfigFile
+	err := c.ReadYAML(path, &cfg)
+	if err != nil {
+		return err
+	}
 
-	return &rv
+	logrus.WithField("cfg", cfg).WithField("exitCode", c.ExitCode).Trace()
+
+	hasErr, written := c.render(cfg)
+
+	if hasErr > 0 {
+		c.Exit(1)
+	}
+
+	if written > 0 && c.ExitCode {
+		c.Exit(int(written) + 1)
+	}
+
+	return nil
+}
+
+func (c *Config) render(cfg ConfigFile) (hasErr uint32, written uint32) {
+	var wg sync.WaitGroup
+	for _, j := range cfg.Jobs {
+		wg.Add(1)
+
+		go func(j Job) {
+			defer func() {
+				if r := recover(); r != nil {
+					atomic.AddUint32(&hasErr, 1)
+				}
+				wg.Done()
+			}()
+
+			input, err := c.GetInput(j.Input)
+			entry := logrus.WithField("j", j)
+			if err != nil {
+				entry.WithError(err).Panic("unable to open input")
+			}
+
+			fn, ok := gen.DefaultRenderMap[j.Template]
+			if !ok {
+				entry.Panic("invalid template")
+			}
+
+			renderer, err := fn(input)
+			input.Close()
+			if err != nil {
+				entry.WithError(err).Panic("unable to parse input")
+			}
+
+			err = gen.Render(renderer, j.Output, c)
+			entry.WithError(err).Trace()
+
+			switch err {
+			case nil:
+				atomic.AddUint32(&written, 1)
+			case gen.ErrNoChange:
+				// no change
+			default:
+				entry.WithError(err).Panic("unable to render template")
+			}
+		}(j)
+	}
+	wg.Wait()
+	return hasErr, written
 }

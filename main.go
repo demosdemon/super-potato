@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 
-	"github.com/octago/sflags/gen/gpflag"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -21,9 +20,18 @@ type Config struct {
 	*app.App  `flag:"-"`
 	LogLevel  string `flag:"log-level l" desc:"The logging verbosity"`
 	LogOutput string `flag:"log-output" desc:"Where logging is written"`
+	Prefix    string `flag:"prefix" desc:"The prefix for Platform.sh environment variables."`
 }
 
-func (c *Config) Run(cmd *cobra.Command, args []string) error {
+func (c *Config) Use() string {
+	return "super-potato"
+}
+
+func (c *Config) Args(cmd *cobra.Command, args []string) error {
+	return nil
+}
+
+func (c *Config) PersistentPreRun(cmd *cobra.Command, args []string) error {
 	level, err := logrus.ParseLevel(c.LogLevel)
 	if err != nil {
 		return err
@@ -36,39 +44,34 @@ func (c *Config) Run(cmd *cobra.Command, args []string) error {
 
 	logrus.SetLevel(level)
 	logrus.SetOutput(fp)
+	c.SetPrefix(c.Prefix)
+
+	logrus.Trace("program beginning")
 	return nil
 }
 
-func Command(app *app.App) *cobra.Command {
-	logrus.SetOutput(app.Stderr)
+func (c *Config) PersistentPostRun(cmd *cobra.Command, args []string) error {
+	logrus.Trace("program ending")
+	return nil
+}
 
-	cfg := Config{
-		App:       app,
-		LogLevel:  "trace",
-		LogOutput: "/dev/stderr",
+func (c *Config) SubCommands() []app.Config {
+	return []app.Config{
+		deploy.New(c.App),
+		dump.New(c.App),
+		scrape.New(c.App),
+		secret.New(c.App),
+		serve.New(c.App),
 	}
-
-	rv := cobra.Command{
-		Use:               "super-potato",
-		PersistentPreRunE: cfg.Run,
-	}
-
-	err := gpflag.ParseTo(&cfg, rv.PersistentFlags())
-	if err != nil {
-		logrus.WithField("err", err).Fatal("failed to parse config flags")
-	}
-
-	rv.AddCommand(deploy.Command(app))
-	rv.AddCommand(dump.Command(app))
-	rv.AddCommand(scrape.Command(app))
-	rv.AddCommand(secret.Command(app))
-	rv.AddCommand(serve.Command(app))
-
-	return &rv
 }
 
 func main() {
 	inst, cancel := app.New(context.Background())
-	inst.Execute(Command)
+	inst.Execute(&Config{
+		App:       inst,
+		LogLevel:  "trace",
+		LogOutput: "/dev/stderr",
+		Prefix:    "PLATFORM_",
+	})
 	cancel()
 }

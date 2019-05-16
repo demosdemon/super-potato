@@ -9,20 +9,25 @@ import (
 	"expvar"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/cloudflare/cfssl/certdb"
+	"github.com/cloudflare/cfssl/ocsp"
+	"github.com/cloudflare/cfssl/signer"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/sessions/mongo"
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 	"github.com/russross/blackfriday/v2"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
 
+	"github.com/demosdemon/super-potato/pkg/app"
 	"github.com/demosdemon/super-potato/pkg/platformsh"
 )
 
@@ -32,17 +37,76 @@ const (
 )
 
 type Server struct {
-	afero.Fs
-	platformsh.Environment
-	*gin.Engine
+	*app.App      `flag:"-"`
+	SessionCookie string `flag:"session-cookie" desc:"The name of the session cookie." env:"PKI_SESSION_COOKIE"`
 
-	registerOnce sync.Once
-
-	start time.Time
+	once       sync.Once
+	start      time.Time
+	engine     *gin.Engine
+	accessor   certdb.Accessor
+	signer     signer.Signer
+	ocspSigner ocsp.Signer
 }
 
-func GetSecret(env platformsh.Environment) []byte {
-	entropy, err := env.ProjectEntropy()
+func (s *Server) Use() string {
+	return "serve"
+}
+
+func (s *Server) Args(cmd *cobra.Command, args []string) error {
+	return cobra.NoArgs(cmd, args)
+}
+
+func (s *Server) Run(cmd *cobra.Command, args []string) error {
+	return s.Serve()
+}
+
+func (s *Server) init() {
+	s.start = time.Now().Truncate(time.Second)
+	s.engine = gin.New()
+	s.register(s.engine)
+}
+
+func (s *Server) Init() {
+	s.once.Do(s.init)
+}
+
+func (s *Server) Serve() error {
+	s.Init()
+
+	l, err := s.Listener()
+	if err != nil {
+		return errors.Wrap(err, "unable to open listener")
+	}
+	defer l.Close()
+
+	done := make(chan error)
+	defer close(done)
+
+	go func() {
+		srv := http.Server{Handler: s.engine}
+		go func() {
+			done <- srv.Serve(l)
+		}()
+
+		<-s.Done()
+		logrus.WithError(s.Err()).Debug("context done")
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+		defer cancel()
+		if err := srv.Shutdown(ctx); err != nil {
+			logrus.WithError(err).Warn("error shutting down server")
+		}
+	}()
+
+	err = <-done
+	if err != nil {
+		logrus.WithError(err).Warning("server shutdown")
+	}
+	return err
+}
+
+func (s *Server) GetSecret() []byte {
+	entropy, err := s.ProjectEntropy()
 	if err == nil {
 		logrus.WithField("entropy", entropy).Debug("found project entropy")
 		if rv, err := base32.StdEncoding.DecodeString(entropy); err == nil {
@@ -60,10 +124,10 @@ func GetSecret(env platformsh.Environment) []byte {
 	return secret
 }
 
-func GetSessionStore(env platformsh.Environment) sessions.Store {
-	secret := GetSecret(env) // TODO: rotate secret?
+func (s *Server) GetSessionStore() sessions.Store {
+	secret := s.GetSecret() // TODO: rotate secret?
 	var store sessions.Store
-	if rels, err := env.Relationships(); err == nil {
+	if rels, err := s.Relationships(); err == nil {
 		db, err := rels.MongoDB("sessions")
 		if err == nil {
 			col := db.C("sessions")
@@ -85,80 +149,43 @@ func GetSessionStore(env platformsh.Environment) sessions.Store {
 	return store
 }
 
-func New(rootfs afero.Fs, prefix, sessionCookie string) *Server {
-	wd, _ := os.Getwd()
-	fs := afero.NewBasePathFs(rootfs, wd)
-
-	env := platformsh.NewEnvironment(prefix)
-	store := GetSessionStore(env)
-
-	engine := gin.New()
-	engine.Use(gin.Logger())
-	engine.Use(gin.Recovery())
-	engine.Use(sessions.Sessions(sessionCookie, store))
-
-	s := &Server{
-		Fs:          fs,
-		Environment: env,
-		Engine:      engine,
-		start:       time.Now().Truncate(time.Second),
-	}
-
-	s.SetFileSystem(s)
-	return s
-}
-
-func (s *Server) Serve(ctx context.Context, l net.Listener) (err error) {
-	if l == nil {
-		l, err = s.Listener()
-		if err != nil {
-			return err
-		}
-	}
-
-	done := make(chan error)
-	defer close(done)
-
-	go func() {
-		srv := http.Server{Handler: s.Register()}
-
-		go func() {
-			done <- srv.Serve(l)
-		}()
-
-		<-ctx.Done()
-		logrus.WithError(ctx.Err()).Debug("context done")
-
-		if err := srv.Shutdown(context.Background()); err != nil {
-			logrus.WithError(err).Debug("error shutting down server")
-		}
-	}()
-
-	err = <-done
+func (s *Server) GetDB() (*sqlx.DB, error) {
+	rels, err := s.Relationships()
 	if err != nil {
-		logrus.WithError(err).Warning("server shutdown")
+		return nil, errors.Wrap(err, "unable to locate relationships")
 	}
 
-	return err
+	dbOpen, err := rels.Postgresql("database")
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get database connection string")
+	}
+
+	db, err := sqlx.Open("postgres", dbOpen)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to connect to postgres")
+	}
+
+	return db, nil
 }
 
-func (s *Server) Register() *Server {
-	s.registerOnce.Do(s.register)
-	return s
-}
+func (s *Server) register(r gin.IRouter) {
+	r.Use(
+		// order is important
+		gin.Logger(),
+		gin.Recovery(),
+		sessions.Sessions(s.SessionCookie, s.GetSessionStore()),
+		s.certifiedUserMiddleware,
+		s.sessionDuration,
+	)
 
-func (s *Server) register() {
-	s.Use(s.certifiedUserMiddleware)
-	s.Use(s.sessionDuration)
-
-	s.GET("/", s.root)
-	s.GET("/ping", s.getPing)
-	s.GET("/user", s.getUser)
-	s.GET("/debug/vars", s.requireAuth, s.getDebugVars)
-	s.registerGeneratedRoutes(s.Group("/env", s.requireAuth))
-	s.GET("/favicon.ico", s.serverLifetime, s.getFaviconICO)
-	s.GET("/logo.svg", s.getLogoSVG)
-	s.GET("/logo.png", s.serverLifetime, s.getLogoPNG)
+	r.GET("", s.root)
+	r.GET("ping", s.getPing)
+	r.GET("user", s.getUser)
+	r.GET("debug/vars", s.requireAuth, s.getDebugVars)
+	r.GET("favicon.ico", s.serverLifetime, s.getFaviconICO)
+	r.GET("logo.svg", s.cacheControl, s.getLogoSVG)
+	r.GET("logo.png", s.serverLifetime, s.getLogoPNG)
+	s.registerGeneratedRoutes(r.Group("env", s.requireAuth))
 }
 
 func (s *Server) sessionDuration(c *gin.Context) {
