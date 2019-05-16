@@ -1,14 +1,11 @@
 package scrape
 
 import (
-	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"time"
-
 	"github.com/octago/sflags/gen/gpflag"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
+	"net/http"
 
 	"github.com/spf13/cobra"
 
@@ -35,9 +32,7 @@ func (c *Config) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	page := NewCharacterPage(resp.Body)
-	ctx, cancel := context.WithTimeout(c, time.Minute)
-	list, err := page.Collect(ctx)
-	cancel()
+	list, err := page.Collect(c)
 
 	fp, err := c.GetOutput(c.Output)
 	if err != nil {
