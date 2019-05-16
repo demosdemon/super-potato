@@ -150,7 +150,10 @@ func (s *Server) sessionDuration(c *gin.Context) {
 	count, _ := session.Get("count").(int)
 	count += 1
 	session.Set("count", count)
-	_ = session.Save()
+	err := session.Save()
+	if err != nil {
+		logrus.WithError(err).Warn("unable to save session")
+	}
 
 	elapsed := time.Now().Sub(start)
 	if elapsed >= time.Minute {

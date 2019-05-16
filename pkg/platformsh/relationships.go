@@ -111,7 +111,7 @@ func (r Relationships) MongoDB(name string) (*mgo.Database, error) {
 
 	url := b.String()
 
-	mgo.SetLogger(log.New(os.Stderr, "mongo", log.LstdFlags))
+	mgo.SetLogger(log.New(os.Stderr, "mongo ", log.LstdFlags))
 
 	for count := 0; count < 10; count++ {
 		sess, err := mgo.Dial(url)
