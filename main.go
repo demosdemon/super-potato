@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/demosdemon/super-potato/cmd/deploy"
 	"github.com/demosdemon/super-potato/cmd/dump"
 	"github.com/demosdemon/super-potato/cmd/scrape"
 	"github.com/demosdemon/super-potato/cmd/secret"
@@ -57,10 +58,11 @@ func Command(app *app.App) *cobra.Command {
 		logrus.WithField("err", err).Fatal("failed to parse config flags")
 	}
 
+	rv.AddCommand(deploy.Command(app))
 	rv.AddCommand(dump.Command(app))
-	rv.AddCommand(serve.Command(app))
 	rv.AddCommand(scrape.Command(app))
 	rv.AddCommand(secret.Command(app))
+	rv.AddCommand(serve.Command(app))
 
 	return &rv
 }

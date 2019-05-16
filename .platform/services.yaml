@@ -1,3 +1,7 @@
 mongo-sessions:
   type: mongodb:3.6
   disk: 1024
+
+pg-database:
+  type: postgresql:11
+  disk: 1024

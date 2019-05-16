@@ -3,9 +3,23 @@ type: golang:1.12
 disk: 1024
 
 hooks:
-  build: !include
-    type: string
-    path: .platform/build.sh
+  build: |
+    set -eux
+    time go mod vendor
+    time go run ./gen --exit-code
+    time go build -v -a -ldflags '-s -w' .
+    ls -l super-potato
+  deploy: |
+    time ./super-potato deploy
+
+variables:
+  env:
+    PKI_ROOT_CERTIFICATE: !include
+      type: string
+      path: .platform/root.pem
+    PKI_INTERMEDIATE_CERTIFICATE: !include
+      type: string
+      path: .platform/intermediate.pem
 
 mounts:
   /var/tmp:
@@ -33,3 +47,4 @@ web:
 
 relationships:
   sessions: mongo-sessions:mongodb
+  database: pg-database:postgresql

@@ -23,7 +23,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 
-	"github.com/demosdemon/super-potato/pkg/app"
 	"github.com/demosdemon/super-potato/pkg/platformsh"
 )
 
@@ -96,24 +95,17 @@ func GetSessionStore(env platformsh.Environment) sessions.Store {
 	return store
 }
 
-func New(app *app.App) *Server {
+func New(rootfs afero.Fs, prefix, sessionCookie string) *Server {
 	wd, _ := os.Getwd()
-	fs := afero.NewBasePathFs(app, wd)
+	fs := afero.NewBasePathFs(rootfs, wd)
 
-	env := platformsh.NewEnvironment("PLATFORM_")
+	env := platformsh.NewEnvironment(prefix)
 	store := GetSessionStore(env)
 
-	sessionCookie, ok := env.Variable("session-cookie")
-	if !ok {
-		sessionCookie = "super-potato"
-	}
-
 	engine := gin.New()
-	engine.Use(
-		gin.Logger(),
-		gin.Recovery(),
-		sessions.Sessions(sessionCookie.(string), store),
-	)
+	engine.Use(gin.Logger())
+	engine.Use(gin.Recovery())
+	engine.Use(sessions.Sessions(sessionCookie, store))
 
 	s := &Server{
 		Fs:          fs,
