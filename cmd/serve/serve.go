@@ -22,7 +22,7 @@ func (c *Config) Run(cmd *cobra.Command, args []string) error {
 func Command(app *app.App) *cobra.Command {
 	cfg := Config{
 		App:           app,
-		Prefix:        "PLATFORMSH_",
+		Prefix:        "PLATFORM_",
 		SessionCookie: "super-potato",
 	}
 
