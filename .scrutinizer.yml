@@ -20,6 +20,7 @@ build:
   cache:
     directories:
       - ~/gopath/pkg
+      - ~/.analysis
 
   nodes:
     analysis:
