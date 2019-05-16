@@ -18,9 +18,10 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/kylelemons/go-gypsy v0.0.0-20160905020020-08cad365cd28 // indirect
-	github.com/lib/pq v1.0.0
+	github.com/lib/pq v1.1.1
 	github.com/llgcode/draw2d v0.0.0-20180825133448-f52c8a71aff0
 	github.com/mattn/go-isatty v0.0.7
+	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/octago/sflags v0.2.0
 	github.com/pkg/errors v0.8.1
 	github.com/russross/blackfriday/v2 v2.0.1
@@ -32,11 +33,11 @@ require (
 	github.com/sqs/goreturns v0.0.0-20181028201513-538ac6014518
 	github.com/stretchr/testify v1.3.0
 	github.com/ziutek/mymysql v1.5.4 // indirect
-	golang.org/x/image v0.0.0-20190507092727-e4e5bf290fec
+	golang.org/x/image v0.0.0-20190516052701-61b8692d9a5c
 	golang.org/x/net v0.0.0-20190514140710-3ec191127204 // indirect
-	golang.org/x/sys v0.0.0-20190514135907-3a4b5fb9f71f // indirect
+	golang.org/x/sys v0.0.0-20190516110030-61b9204099cb // indirect
 	golang.org/x/text v0.3.2 // indirect
-	golang.org/x/tools v0.0.0-20190515012406-7d7faa4812bd
+	golang.org/x/tools v0.0.0-20190516173022-abbb706b23e2
 	google.golang.org/appengine v1.6.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/go-playground/colors.v1 v1.2.0
