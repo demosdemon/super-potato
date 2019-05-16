@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"bitbucket.org/liamstask/goose/lib/goose"
-	_ "github.com/cloudflare/cfssl/certdb/sql"
 	"github.com/octago/sflags/gen/gpflag"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
