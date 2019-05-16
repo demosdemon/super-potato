@@ -20,7 +20,7 @@ import (
 
 type Config struct {
 	*app.App `flag:"-"`
-	Format   string `flag:"format f" desc:"The output format; one of base16, base32, base64, PEM, blob" valid:"in(base16,base32,base64,PEM,blob)"`
+	Format   string `flag:"format f" desc:"The output format; one of base16, base32, base64, PEM, blob"`
 	Output   string `flag:"output o" desc:"Where the output is written"`
 	Bytes    int    `flag:"bytes b" desc:"The number of bytes to generate (n bits / 8 bits per byte)"`
 }

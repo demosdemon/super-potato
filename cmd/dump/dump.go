@@ -14,7 +14,7 @@ import (
 type Config struct {
 	*app.App `flag:"-"`
 	Output   string `flag:"output o" desc:"Where the output is written"`
-	Format   string `flag:"format f" desc:"The output format; one of environ, shell" valid:"in(environ,bare)"`
+	Format   string `flag:"format f" desc:"The output format; one of environ, shell"`
 }
 
 func (c *Config) Run(cmd *cobra.Command, args []string) error {
