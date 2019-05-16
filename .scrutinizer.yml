@@ -1,0 +1,14 @@
+checks:
+  go: true
+
+build:
+  environment:
+    go: go1.12.5
+
+  nodes:
+    analysis:
+      tests:
+        override:
+          - go-scrutinizer-run
+          - govet-run
+          - golint-run
