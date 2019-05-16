@@ -16,7 +16,7 @@ type Config struct {
 }
 
 func (c *Config) Run(cmd *cobra.Command, args []string) error {
-	return server.New(c, c.Prefix, c.SessionCookie).Serve(nil)
+	return server.New(c, c.Prefix, c.SessionCookie).Serve(c, nil)
 }
 
 func Command(app *app.App) *cobra.Command {

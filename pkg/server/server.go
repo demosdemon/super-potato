@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/base32"
 	"encoding/json"
@@ -107,7 +108,7 @@ func New(rootfs afero.Fs, prefix, sessionCookie string) *Server {
 	return s
 }
 
-func (s *Server) Serve(l net.Listener) (err error) {
+func (s *Server) Serve(ctx context.Context, l net.Listener) (err error) {
 	if l == nil {
 		l, err = s.Listener()
 		if err != nil {
@@ -115,7 +116,30 @@ func (s *Server) Serve(l net.Listener) (err error) {
 		}
 	}
 
-	return http.Serve(l, s.Register())
+	done := make(chan error)
+	defer close(done)
+
+	go func() {
+		srv := http.Server{Handler: s.Register()}
+
+		go func() {
+			done <- srv.Serve(l)
+		}()
+
+		<-ctx.Done()
+		logrus.WithError(ctx.Err()).Debug("context done")
+
+		if err := srv.Shutdown(context.Background()); err != nil {
+			logrus.WithError(err).Debug("error shutting down server")
+		}
+	}()
+
+	err = <-done
+	if err != nil {
+		logrus.WithError(err).Warning("server shutdown")
+	}
+
+	return err
 }
 
 func (s *Server) Register() *Server {
