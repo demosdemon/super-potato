@@ -42,7 +42,7 @@ func (c *Config) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	db, ok := rels["database"]
-	if !ok {
+	if !ok && len(db) > 0 {
 		return errors.New("unable to locate database relationship")
 	}
 
