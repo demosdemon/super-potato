@@ -3,6 +3,8 @@ package server
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+
+	"github.com/demosdemon/super-potato/pkg/pki"
 )
 
 type User interface {
@@ -28,7 +30,7 @@ func (AnonymousUser) Authenticated() bool {
 var TheAnonymousUser = AnonymousUser{}
 
 type CertifiedUser struct {
-	ClientCertificate Certificate
+	ClientCertificate pki.Certificate
 	DistinguishedName string
 }
 

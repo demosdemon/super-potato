@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/base32"
 	"encoding/json"
@@ -18,12 +19,10 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/sessions/mongo"
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo"
 	"github.com/russross/blackfriday/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 
-	"github.com/demosdemon/super-potato/pkg/app"
 	"github.com/demosdemon/super-potato/pkg/platformsh"
 )
 
@@ -65,22 +64,12 @@ func GetSessionStore(env platformsh.Environment) sessions.Store {
 	secret := GetSecret(env) // TODO: rotate secret?
 	var store sessions.Store
 	if rels, err := env.Relationships(); err == nil {
-		if rels, ok := rels["sessions"]; ok && len(rels) > 0 {
-			rel := rels[0]
-			for count := 0; count < 10; count++ {
-				sess, err := mgo.Dial(rel.URL(false, false))
-				if err == nil {
-					col := sess.DB("").C("sessions")
-					store = mongo.NewStore(col, OneYear, true, secret)
-					break
-				}
-				logrus.WithFields(logrus.Fields{
-					"attempt": count + 1,
-					"err":     err,
-				}).Warn("failed to connect to mongo server")
-			}
+		db, err := rels.MongoDB("sessions")
+		if err == nil {
+			col := db.C("sessions")
+			store = mongo.NewStore(col, OneYear, true, secret)
 		} else {
-			logrus.Warn("unable to locate `sessions` relationship")
+			logrus.WithError(err).Warn("unable to connect to mongo server")
 		}
 	} else {
 		logrus.WithField("err", err).Warn("unable to determine relationships")
@@ -96,24 +85,17 @@ func GetSessionStore(env platformsh.Environment) sessions.Store {
 	return store
 }
 
-func New(app *app.App) *Server {
+func New(rootfs afero.Fs, prefix, sessionCookie string) *Server {
 	wd, _ := os.Getwd()
-	fs := afero.NewBasePathFs(app, wd)
+	fs := afero.NewBasePathFs(rootfs, wd)
 
-	env := platformsh.NewEnvironment("PLATFORM_")
+	env := platformsh.NewEnvironment(prefix)
 	store := GetSessionStore(env)
 
-	sessionCookie, ok := env.Variable("session-cookie")
-	if !ok {
-		sessionCookie = "super-potato"
-	}
-
 	engine := gin.New()
-	engine.Use(
-		gin.Logger(),
-		gin.Recovery(),
-		sessions.Sessions(sessionCookie.(string), store),
-	)
+	engine.Use(gin.Logger())
+	engine.Use(gin.Recovery())
+	engine.Use(sessions.Sessions(sessionCookie, store))
 
 	s := &Server{
 		Fs:          fs,
@@ -126,7 +108,7 @@ func New(app *app.App) *Server {
 	return s
 }
 
-func (s *Server) Serve(l net.Listener) (err error) {
+func (s *Server) Serve(ctx context.Context, l net.Listener) (err error) {
 	if l == nil {
 		l, err = s.Listener()
 		if err != nil {
@@ -134,7 +116,30 @@ func (s *Server) Serve(l net.Listener) (err error) {
 		}
 	}
 
-	return http.Serve(l, s.Register())
+	done := make(chan error)
+	defer close(done)
+
+	go func() {
+		srv := http.Server{Handler: s.Register()}
+
+		go func() {
+			done <- srv.Serve(l)
+		}()
+
+		<-ctx.Done()
+		logrus.WithError(ctx.Err()).Debug("context done")
+
+		if err := srv.Shutdown(context.Background()); err != nil {
+			logrus.WithError(err).Debug("error shutting down server")
+		}
+	}()
+
+	err = <-done
+	if err != nil {
+		logrus.WithError(err).Warning("server shutdown")
+	}
+
+	return err
 }
 
 func (s *Server) Register() *Server {
@@ -169,7 +174,10 @@ func (s *Server) sessionDuration(c *gin.Context) {
 	count, _ := session.Get("count").(int)
 	count += 1
 	session.Set("count", count)
-	_ = session.Save()
+	err := session.Save()
+	if err != nil {
+		logrus.WithError(err).Warn("unable to save session")
+	}
 
 	elapsed := time.Now().Sub(start)
 	if elapsed >= time.Minute {

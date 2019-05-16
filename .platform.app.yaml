@@ -1,11 +1,25 @@
 name: app
 type: golang:1.12
-disk: 128
+disk: 1024
 
 hooks:
-  build: !include
-    type: string
-    path: .platform/build.sh
+  build: |
+    set -eux
+    time go get ./...
+    time go run ./gen --exit-code
+    time go build -v -a -ldflags '-s -w' .
+    ls -l super-potato
+  deploy: |
+    time ./super-potato deploy
+
+variables:
+  env:
+    PKI_ROOT_CERTIFICATE: !include
+      type: string
+      path: .platform/root.pem
+    PKI_INTERMEDIATE_CERTIFICATE: !include
+      type: string
+      path: .platform/intermediate.pem
 
 mounts:
   /var/tmp:
@@ -15,8 +29,7 @@ mounts:
     source: local
     source_path: log
   /var/pki:
-    source: service
-    service: storage
+    source: local
     source_path: pki
 
 web:
@@ -34,3 +47,4 @@ web:
 
 relationships:
   sessions: mongo-sessions:mongodb
+  database: pg-database:postgresql

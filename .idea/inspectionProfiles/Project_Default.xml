@@ -27,6 +27,7 @@
         <method importPath="github.com/spf13/afero" receiver="File" name="Close" />
         <method importPath="github.com/gin-gonic/gin" receiver="*Context" name="AbortWithError" />
         <method importPath="github.com/gin-gonic/gin" receiver="ResponseWriter" name="Write" />
+        <method importPath="io" receiver="WriteCloser" name="Close" />
       </methods>
     </inspection_tool>
   </profile>

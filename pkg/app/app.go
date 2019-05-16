@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,7 +16,23 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+func init() {
+	logrus.SetLevel(logrus.TraceLevel)
+	logrus.SetOutput(os.Stderr)
+	log.SetOutput(os.Stderr)
+
+	if caller := os.Getenv("PKI_LOG_CALLER"); caller == "1" || caller == "true" {
+		logrus.SetReportCaller(true)
+	} else {
+		logrus.SetReportCaller(false)
+	}
+}
+
 type Command func(app *App) *cobra.Command
+
+type LogLogger interface {
+	Output(calldepth int, s string) error
+}
 
 type App struct {
 	context.Context
@@ -26,29 +43,25 @@ type App struct {
 	Stderr io.Writer
 }
 
-type nopWriterCloser struct {
-	io.Writer
-}
-
-func (nopWriterCloser) Close() error {
-	return nil
-}
-
-func init() {
-	logrus.SetReportCaller(true)
-	logrus.SetLevel(logrus.TraceLevel)
+func (a *App) Logger(prefix string) LogLogger {
+	return log.New(a.Stderr, prefix, log.LstdFlags)
 }
 
 func New(ctx context.Context) (*App, context.CancelFunc) {
 	ctx, cancel := CancelOnSignal(ctx, syscall.SIGINT, syscall.SIGTERM)
-	return &App{
+
+	logrus.SetOutput(os.Stderr)
+
+	app := &App{
 		Context: ctx,
 		Fs:      afero.NewOsFs(),
 		Exit:    logrus.Exit,
 		Stdin:   os.Stdin,
 		Stdout:  os.Stdout,
 		Stderr:  os.Stderr,
-	}, cancel
+	}
+
+	return app, cancel
 }
 
 func (a *App) Execute(command Command) {
@@ -97,13 +110,26 @@ func (a *App) GetInput(s string) (io.ReadCloser, error) {
 func (a *App) GetOutput(s string) (io.WriteCloser, error) {
 	switch s {
 	case "-", "/dev/stdout":
-		return nopWriterCloser{a.Stdout}, nil
+		return NopWriterCloser(a.Stdout)
 	case "/dev/stderr":
-		return nopWriterCloser{a.Stderr}, nil
+		return NopWriterCloser(a.Stderr)
 	case "/dev/null":
-		return nopWriterCloser{ioutil.Discard}, nil
+		return NopWriterCloser(ioutil.Discard)
 	default:
 		return a.Create(s)
+	}
+}
+
+func (a *App) Append(s string) (io.WriteCloser, error) {
+	switch s {
+	case "-", "/dev/stdout":
+		return NopWriterCloser(a.Stdout)
+	case "/dev/stderr":
+		return NopWriterCloser(a.Stderr)
+	case "/dev/null":
+		return NopWriterCloser(ioutil.Discard)
+	default:
+		return a.OpenFile(s, os.O_APPEND|os.O_WRONLY, 0644)
 	}
 }
 
@@ -112,12 +138,8 @@ func (a *App) ReadYAML(path string, data interface{}) error {
 	if err != nil {
 		return err
 	}
+	defer fp.Close()
 
-	text, err := ioutil.ReadAll(fp)
-	fp.Close()
-	if err != nil {
-		return err
-	}
-
-	return yaml.Unmarshal(text, data)
+	dec := yaml.NewDecoder(fp)
+	return dec.Decode(&data)
 }
