@@ -32,7 +32,6 @@ var (
 
 const (
 	DefaultFilePermissions os.FileMode = 0644
-	ExitCodeUsage                      = ""
 )
 
 func Render(r Renderer, filename string, fs afero.Fs) error {
