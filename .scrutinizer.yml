@@ -30,6 +30,7 @@ build:
           - go get github.com/axw/gocov
       tests:
         override:
+          - command: go run ./gen --exit-code
           - command: go test -v -coverprofile=cover.out $(go list ./... | grep -v vendor)
             coverage:
               file: cover.out
