@@ -7,13 +7,16 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/signal"
 	"syscall"
 
+	"github.com/octago/sflags/gen/gpflag"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v2"
+
+	"github.com/demosdemon/super-potato/pkg/platformsh"
 )
 
 func init() {
@@ -26,9 +29,9 @@ func init() {
 	} else {
 		logrus.SetReportCaller(false)
 	}
-}
 
-type Command func(app *App) *cobra.Command
+	logrus.Trace("init app")
+}
 
 type LogLogger interface {
 	Output(calldepth int, s string) error
@@ -37,20 +40,16 @@ type LogLogger interface {
 type App struct {
 	context.Context
 	afero.Fs
+	platformsh.Environment
+
 	Exit   func(int)
 	Stdin  io.Reader
 	Stdout io.Writer
 	Stderr io.Writer
 }
 
-func (a *App) Logger(prefix string) LogLogger {
-	return log.New(a.Stderr, prefix, log.LstdFlags)
-}
-
 func New(ctx context.Context) (*App, context.CancelFunc) {
 	ctx, cancel := CancelOnSignal(ctx, syscall.SIGINT, syscall.SIGTERM)
-
-	logrus.SetOutput(os.Stderr)
 
 	app := &App{
 		Context: ctx,
@@ -64,36 +63,22 @@ func New(ctx context.Context) (*App, context.CancelFunc) {
 	return app, cancel
 }
 
-func (a *App) Execute(command Command) {
-	cmd := command(a)
+func (a *App) SetPrefix(s string) {
+	a.Environment = platformsh.NewEnvironment(s)
+}
+
+func (a *App) Logger(prefix string) LogLogger {
+	return log.New(a.Stderr, prefix, log.LstdFlags)
+}
+
+func (a *App) Execute(cfg Config) {
+	cmd := command(cfg)
 
 	if err := cmd.Execute(); err != nil {
 		a.Exit(1)
 	}
 
 	a.Exit(0)
-}
-
-func CancelOnSignal(ctx context.Context, signals ...os.Signal) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(ctx)
-
-	ch := make(chan os.Signal, len(signals))
-	signal.Notify(ch, signals...)
-
-	go func() {
-		select {
-		case sig := <-ch:
-			logrus.WithField("signal", sig).Debug("received signal")
-		case <-ctx.Done():
-			logrus.WithField("err", ctx.Err()).Debug("context done")
-		}
-
-		signal.Stop(ch)
-		close(ch)
-		cancel()
-	}()
-
-	return ctx, cancel
 }
 
 func (a *App) GetInput(s string) (io.ReadCloser, error) {
@@ -142,4 +127,56 @@ func (a *App) ReadYAML(path string, data interface{}) error {
 
 	dec := yaml.NewDecoder(fp)
 	return dec.Decode(&data)
+}
+
+type cobraRunner func(cmd *cobra.Command, args []string) error
+
+func command(cfg Config) *cobra.Command {
+	var persistentPreRun, preRun, run, postRun, persistentPostRun cobraRunner
+	var subCommands []Config
+
+	if c, ok := cfg.(RootRunner); ok {
+		persistentPreRun = c.PersistentPreRun
+		persistentPostRun = c.PersistentPostRun
+	}
+	if c, ok := cfg.(PreRunner); ok {
+		preRun = c.PreRun
+	}
+	if c, ok := cfg.(Runner); ok {
+		run = c.Run
+	}
+	if c, ok := cfg.(PostRunner); ok {
+		postRun = c.PostRun
+	}
+	if c, ok := cfg.(MasterRunner); ok {
+		subCommands = c.SubCommands()
+	}
+
+	cmd := cobra.Command{
+		Use:                cfg.Use(),
+		Args:               cfg.Args,
+		PersistentPreRunE:  persistentPreRun,
+		PreRunE:            preRun,
+		RunE:               run,
+		PostRunE:           postRun,
+		PersistentPostRunE: persistentPostRun,
+	}
+
+	var flags *pflag.FlagSet
+	if _, ok := cfg.(RootRunner); ok {
+		flags = cmd.PersistentFlags()
+	} else {
+		flags = cmd.Flags()
+	}
+
+	err := gpflag.ParseTo(cfg, flags)
+	if err != nil {
+		logrus.WithError(err).Fatal("failed to parse config flags")
+	}
+
+	for _, subCfg := range subCommands {
+		cmd.AddCommand(command(subCfg))
+	}
+
+	return &cmd
 }

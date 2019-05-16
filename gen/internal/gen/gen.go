@@ -32,7 +32,7 @@ var (
 
 const (
 	DefaultFilePermissions os.FileMode = 0644
-	ExitCodeUsage                      = "If specified, the exit code will be the number of files written plus 1. An exit code of 1 indicates program error."
+	ExitCodeUsage                      = ""
 )
 
 func Render(r Renderer, filename string, fs afero.Fs) error {
