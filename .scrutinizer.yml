@@ -1,0 +1,40 @@
+checks:
+  go: true
+
+build:
+  environment:
+    go:
+      version: go1.12.5
+    variables:
+      GO111MODULE: on
+
+  dependencies:
+    override:
+      - git submodule update --init --recursive
+      - go get ./...
+
+  project_setup:
+    override:
+      - "true"
+
+  nodes:
+    analysis:
+      tests:
+        override:
+          - go-scrutinizer-run
+          - govet-run
+          - golint-run
+    tests:
+      dependencies:
+        before:
+          - go get github.com/axw/gocov
+      tests:
+        override:
+          - command: go test -v -coverprofile=cover.out $(go list ./... | grep -v vendor)
+            coverage:
+              file: cover.out
+              format: go-cc
+
+filter:
+  excluded_paths:
+    - "vendor/*"
