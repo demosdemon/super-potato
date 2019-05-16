@@ -24,3 +24,18 @@ func (n SerialNumber) String() string {
 	}
 	return strings.Join(rv, ":")
 }
+
+func (n SerialNumber) MarshalText() ([]byte, error) {
+	return []byte(n.String()), nil
+}
+
+func (n *SerialNumber) UnmarshalText(text []byte) error {
+	nibbles := strings.Split(string(text), ":")
+	bigint := make([]byte, len(nibbles))
+	for idx, nib := range nibbles {
+		_, _ = fmt.Sscanf(nib, "%02x", &bigint[idx])
+	}
+	n.Int = new(big.Int)
+	n.SetBytes(bigint)
+	return nil
+}

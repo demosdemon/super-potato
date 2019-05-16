@@ -2,6 +2,7 @@ package pki
 
 import (
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -26,6 +27,10 @@ var extKeyUsageMap = map[x509.ExtKeyUsage]string{
 }
 
 func (u ExtKeyUsage) String() string {
+	return strings.Join(u.Marshal(), ", ")
+}
+
+func (u ExtKeyUsage) Marshal() []string {
 	value := []x509.ExtKeyUsage(u)
 	usage := make([]string, len(value))
 	for idx, v := range value {
@@ -35,5 +40,54 @@ func (u ExtKeyUsage) String() string {
 			usage[idx] = fmt.Sprintf("%02x", int(v))
 		}
 	}
-	return strings.Join(usage, ", ")
+	return usage
+}
+
+func (u *ExtKeyUsage) Unmarshal(usage []string) error {
+	*u = make(ExtKeyUsage, len(usage))
+	usageMap := make(map[string]x509.ExtKeyUsage, len(extKeyUsageMap))
+	for k, v := range extKeyUsageMap {
+		usageMap[v] = k
+	}
+	for idx, use := range usage {
+		if v, ok := usageMap[use]; ok {
+			(*u)[idx] = v
+		}
+	}
+	return nil
+}
+
+func (u ExtKeyUsage) MarshalText() ([]byte, error) {
+	return []byte(u.String()), nil
+}
+
+func (u *ExtKeyUsage) UnmarshalText(text []byte) error {
+	usage := strings.Split(string(text), ", ")
+	return u.Unmarshal(usage)
+}
+
+func (u ExtKeyUsage) MarshalJSON() ([]byte, error) {
+	return json.Marshal(u.Marshal())
+}
+
+func (u *ExtKeyUsage) UnmarshalJSON(data []byte) error {
+	var usage []string
+	err := json.Unmarshal(data, &usage)
+	if err != nil {
+		return err
+	}
+	return u.Unmarshal(usage)
+}
+
+func (u ExtKeyUsage) MarshalYAML() (interface{}, error) {
+	return u.Marshal(), nil
+}
+
+func (u *ExtKeyUsage) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var usage []string
+	err := unmarshal(&usage)
+	if err != nil {
+		return err
+	}
+	return u.Unmarshal(usage)
 }

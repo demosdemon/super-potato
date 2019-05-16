@@ -30,3 +30,24 @@ func (u KeyUsage) String() string {
 
 	return strings.Join(usage, ", ")
 }
+
+func (u KeyUsage) MarshalText() ([]byte, error) {
+	return []byte(u.String()), nil
+}
+
+func (u *KeyUsage) UnmarshalText(text []byte) error {
+	value := (*x509.KeyUsage)(u)
+	*value = 0
+
+	usage := strings.Split(string(text), ", ")
+	usageMap := make(map[string]struct{}, len(usage))
+	for _, k := range usage {
+		usageMap[k] = struct{}{}
+	}
+	for k, v := range keyUsageMap {
+		if _, ok := usageMap[v]; ok {
+			*value |= k
+		}
+	}
+	return nil
+}

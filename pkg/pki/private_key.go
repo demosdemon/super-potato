@@ -28,6 +28,12 @@ func NewPrivateKeyWithSecret(bits int, secret []byte) *PrivateKey {
 	return rv
 }
 
+func EmptyPrivateKeyWithSecret(secret []byte) *PrivateKey {
+	return &PrivateKey{
+		secret: secret,
+	}
+}
+
 func (pk *PrivateKey) UnmarshalText(text []byte) error {
 	if len(text) == 0 {
 		pk.PrivateKey = nil
