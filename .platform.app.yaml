@@ -5,7 +5,7 @@ disk: 1024
 hooks:
   build: |
     set -eux
-    time go mod vendor
+    time go get ./...
     time go run ./gen --exit-code
     time go build -v -a -ldflags '-s -w' .
     ls -l super-potato

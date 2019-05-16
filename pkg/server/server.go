@@ -8,6 +8,7 @@ import (
 	"expvar"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -66,10 +67,14 @@ func GetSessionStore(env platformsh.Environment) sessions.Store {
 	if rels, err := env.Relationships(); err == nil {
 		if rels, ok := rels["sessions"]; ok && len(rels) > 0 {
 			rel := rels[0]
+			mgo.SetLogger(log.New(os.Stderr, "mongo", log.LstdFlags))
 			for count := 0; count < 10; count++ {
-				sess, err := mgo.Dial(rel.URL(false, false))
-				if err == nil {
-					col := sess.DB("").C("sessions")
+				if sess, err := mgo.Dial(rel.URL(false, false)); err == nil {
+					db := sess.DB(rel.Path)
+					if err := db.Login(rel.Username, rel.Password); err != nil {
+						logrus.WithError(err).Warn("error logging into mongo db")
+					}
+					col := db.C("sessions")
 					store = mongo.NewStore(col, OneYear, true, secret)
 					break
 				}
