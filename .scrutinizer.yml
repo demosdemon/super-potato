@@ -17,6 +17,10 @@ build:
     override:
       - "true"
 
+  cache:
+    directories:
+      - ~/gopath/pkg
+
   nodes:
     analysis:
       tests:
