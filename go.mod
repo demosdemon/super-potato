@@ -11,7 +11,6 @@ require (
 	github.com/gin-gonic/gin v1.4.0
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 	github.com/go-openapi/inflect v0.19.0
-	github.com/harukasan/go-libwebp v0.0.0-20170713060718-de5a25c05e7d
 	github.com/iancoleman/strcase v0.0.0-20190422225806-e506e3ef7365
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmoiron/sqlx v1.2.0 // indirect
