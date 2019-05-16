@@ -124,6 +124,9 @@ func Command(app *app.App) *cobra.Command {
 }
 
 func istty(w io.Writer) bool {
+	if nopW, ok := w.(app.NopWriterCloser); ok {
+		w = nopW.Writer
+	}
 	if f, ok := w.(*os.File); ok {
 		return isatty.IsTerminal(f.Fd())
 	}

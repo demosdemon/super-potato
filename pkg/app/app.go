@@ -110,11 +110,11 @@ func (a *App) GetInput(s string) (io.ReadCloser, error) {
 func (a *App) GetOutput(s string) (io.WriteCloser, error) {
 	switch s {
 	case "-", "/dev/stdout":
-		return NopWriterCloser(a.Stdout)
+		return NewNopWriterCloser(a.Stdout)
 	case "/dev/stderr":
-		return NopWriterCloser(a.Stderr)
+		return NewNopWriterCloser(a.Stderr)
 	case "/dev/null":
-		return NopWriterCloser(ioutil.Discard)
+		return NewNopWriterCloser(ioutil.Discard)
 	default:
 		return a.Create(s)
 	}
@@ -123,11 +123,11 @@ func (a *App) GetOutput(s string) (io.WriteCloser, error) {
 func (a *App) Append(s string) (io.WriteCloser, error) {
 	switch s {
 	case "-", "/dev/stdout":
-		return NopWriterCloser(a.Stdout)
+		return NewNopWriterCloser(a.Stdout)
 	case "/dev/stderr":
-		return NopWriterCloser(a.Stderr)
+		return NewNopWriterCloser(a.Stderr)
 	case "/dev/null":
-		return NopWriterCloser(ioutil.Discard)
+		return NewNopWriterCloser(ioutil.Discard)
 	default:
 		return a.OpenFile(s, os.O_APPEND|os.O_WRONLY, 0644)
 	}
