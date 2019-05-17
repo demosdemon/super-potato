@@ -1,6 +1,8 @@
 package server
 
 import (
+	"bytes"
+	"encoding"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -109,6 +111,10 @@ func (p *pretty) render() (string, error) {
 	case binding.MIMEYAML:
 		format = "yaml"
 		formatted, err = yaml.Marshal(p.Data)
+	default:
+		logrus.WithField("format", p.Format).Warn("unknown format")
+		format = "text"
+		formatted, err = marshalText(p.Data)
 	}
 
 	if err != nil {
@@ -116,4 +122,13 @@ func (p *pretty) render() (string, error) {
 	}
 
 	return fmt.Sprintf(prettyMarkdownTemplate, p.Title, format, string(formatted)), nil
+}
+
+func marshalText(data interface{}) ([]byte, error) {
+	if m, ok := data.(encoding.TextMarshaler); ok {
+		return m.MarshalText()
+	}
+	var buf bytes.Buffer
+	_, err := fmt.Fprintf(&buf, "%v", data)
+	return buf.Bytes(), err
 }
