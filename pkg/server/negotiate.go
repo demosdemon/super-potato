@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -19,10 +20,12 @@ const prettyMarkdownTemplate = "# %s\n\n```%s\n%s\n```\n"
 
 type pretty struct {
 	*Markdown
-	buf    io.Reader
 	Title  string
 	Format string
 	Data   interface{}
+
+	bufMu sync.Mutex
+	buf   io.Reader
 }
 
 func newPretty(c *gin.Context, code int, data interface{}) pretty {
@@ -30,6 +33,8 @@ func newPretty(c *gin.Context, code int, data interface{}) pretty {
 		binding.MIMEJSON,
 		binding.MIMEYAML,
 	)
+
+	logrus.WithField("format", format).Trace("pretty")
 
 	p := pretty{
 		Title:  http.StatusText(code),
@@ -55,6 +60,8 @@ func (s *Server) negotiate(c *gin.Context, code int, data interface{}) {
 }
 
 func getRenderer(format string, data interface{}, c *gin.Context, code int) render.Render {
+	logrus.WithField("format", format).WithField("data", data).Trace("getRenderer")
+
 	switch format {
 	case binding.MIMEJSON:
 		return render.IndentedJSON{Data: data}
@@ -71,6 +78,9 @@ func getRenderer(format string, data interface{}, c *gin.Context, code int) rend
 }
 
 func (p pretty) Read(buf []byte) (int, error) {
+	p.bufMu.Lock()
+	defer p.bufMu.Unlock()
+
 	if p.buf == nil {
 		r, err := p.render()
 		if err != nil {
@@ -78,6 +88,7 @@ func (p pretty) Read(buf []byte) (int, error) {
 		}
 		p.buf = strings.NewReader(r)
 	}
+
 	return p.buf.Read(buf)
 }
 
