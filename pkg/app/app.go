@@ -3,12 +3,6 @@ package app
 import (
 	"bytes"
 	"context"
-	"github.com/octago/sflags/gen/gpflag"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
-	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,6 +10,13 @@ import (
 	"runtime"
 	"syscall"
 	"time"
+
+	"github.com/octago/sflags/gen/gpflag"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"gopkg.in/yaml.v2"
 
 	"github.com/demosdemon/super-potato/pkg/platformsh"
 )
