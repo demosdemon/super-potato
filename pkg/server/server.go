@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"expvar"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"sync"
@@ -23,7 +22,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
-	"github.com/russross/blackfriday/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -237,19 +235,10 @@ func (s *Server) root(c *gin.Context) {
 		}
 		return
 	}
+	defer fp.Close()
 
-	data, err := ioutil.ReadAll(fp)
-	fp.Close()
-
-	if err != nil {
-		_ = c.AbortWithError(500, err)
-		return
-	}
-
-	output := blackfriday.Run(data)
-	c.Header("Content-Type", "text/html")
-	c.Writer.WriteHeader(200)
-	c.Writer.Write(output)
+	r := NewMarkdown(fp)
+	c.Render(200, r)
 }
 
 func (s *Server) getPing(c *gin.Context) {

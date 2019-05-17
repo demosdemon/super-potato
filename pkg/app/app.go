@@ -53,9 +53,12 @@ type App struct {
 func New(ctx context.Context) (*App, context.CancelFunc) {
 	ctx, cancel := CancelOnSignal(ctx, syscall.SIGINT, syscall.SIGTERM)
 
+	cwd, _ := os.Getwd()
+	fs := afero.NewBasePathFs(afero.NewOsFs(), cwd)
+
 	app := &App{
 		Context: ctx,
-		Fs:      afero.NewOsFs(),
+		Fs:      fs,
 		Exit:    logrus.Exit,
 		Stdin:   os.Stdin,
 		Stdout:  os.Stdout,
