@@ -4,58 +4,22 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
-	"github.com/russross/blackfriday/v2"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
-const (
-	prettyMarkdownTemplate = "# %s\n\n```%s\n%s\n```\n"
-	prettyHTMLTemplate     = `<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<title>Result</title>
-	<style>
-		html {
-			font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-			font-weight: 300;
-			background-color: #eee;
-		}
-
-		h1 {
-			font-weight: 100;
-		}
-
-		body {
-			margin: 3em;
-		}
-
-		.logo {
-			display: block;
-			margin: 10px auto;
-			width: 100px;
-			height: 100px;
-		}
-	</style>
-	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/styles/default.min.css">
-</head>
-<body>
-	<img class="logo" src="/logo.svg?background=%%23ccc&foreground=%%23eee" alt="">
-	<div class="markdown">%s</div>
-	<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/highlight.min.js"></script>
-	<script>hljs.initHighlighting();</script>
-</body>
-</html>
-`
-)
+const prettyMarkdownTemplate = "# %s\n\n```%s\n%s\n```\n"
 
 type pretty struct {
+	*Markdown
+	buf    io.Reader
 	Title  string
 	Format string
 	Data   interface{}
@@ -67,11 +31,13 @@ func newPretty(c *gin.Context, code int, data interface{}) pretty {
 		binding.MIMEYAML,
 	)
 
-	return pretty{
+	p := pretty{
 		Title:  http.StatusText(code),
 		Format: format,
 		Data:   data,
 	}
+	p.Markdown = NewMarkdown(p)
+	return p
 }
 
 func (s *Server) negotiate(c *gin.Context, code int, data interface{}) {
@@ -104,8 +70,18 @@ func getRenderer(format string, data interface{}, c *gin.Context, code int) rend
 	}
 }
 
-func (p pretty) Render(w http.ResponseWriter) error {
-	p.WriteContentType(w)
+func (p pretty) Read(buf []byte) (int, error) {
+	if p.buf == nil {
+		r, err := p.render()
+		if err != nil {
+			return 0, err
+		}
+		p.buf = strings.NewReader(r)
+	}
+	return p.buf.Read(buf)
+}
+
+func (p pretty) render() (string, error) {
 	var format string
 	var formatted []byte
 	var err error
@@ -122,23 +98,8 @@ func (p pretty) Render(w http.ResponseWriter) error {
 	}
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	md := fmt.Sprintf(prettyMarkdownTemplate, p.Title, format, string(formatted))
-	html := blackfriday.Run(
-		[]byte(md),
-		blackfriday.WithExtensions(
-			blackfriday.CommonExtensions|blackfriday.AutoHeadingIDs|blackfriday.HardLineBreak,
-		),
-	)
-	_, err = fmt.Fprintf(w, prettyHTMLTemplate, string(html))
-	return err
-}
-
-func (p pretty) WriteContentType(w http.ResponseWriter) {
-	if v, ok := w.Header()["Content-Type"]; ok && len(v) > 0 {
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	return fmt.Sprintf(prettyMarkdownTemplate, p.Title, format, string(formatted)), nil
 }
