@@ -19,7 +19,7 @@ import (
 const prettyMarkdownTemplate = "# %s\n\n```%s\n%s\n```\n"
 
 type pretty struct {
-	*Markdown
+	Markdown
 	Title  string
 	Format string
 	Data   interface{}
@@ -28,7 +28,7 @@ type pretty struct {
 	buf   io.Reader
 }
 
-func newPretty(c *gin.Context, code int, data interface{}) pretty {
+func newPretty(c *gin.Context, code int, data interface{}) *pretty {
 	format := c.NegotiateFormat(
 		binding.MIMEJSON,
 		binding.MIMEYAML,
@@ -41,8 +41,8 @@ func newPretty(c *gin.Context, code int, data interface{}) pretty {
 		Format: format,
 		Data:   data,
 	}
-	p.Markdown = NewMarkdown(p)
-	return p
+	p.Markdown.input = &p
+	return &p
 }
 
 func (s *Server) negotiate(c *gin.Context, code int, data interface{}) {
@@ -77,7 +77,7 @@ func getRenderer(format string, data interface{}, c *gin.Context, code int) rend
 	}
 }
 
-func (p pretty) Read(buf []byte) (int, error) {
+func (p *pretty) Read(buf []byte) (int, error) {
 	logrus.Trace("pretty read")
 
 	p.bufMu.Lock()
@@ -96,7 +96,7 @@ func (p pretty) Read(buf []byte) (int, error) {
 	return p.buf.Read(buf)
 }
 
-func (p pretty) render() (string, error) {
+func (p *pretty) render() (string, error) {
 	logrus.Trace("pretty render")
 
 	var format string
