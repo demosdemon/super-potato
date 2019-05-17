@@ -23,14 +23,16 @@ func init() {
 	logrus.SetLevel(logrus.TraceLevel)
 	logrus.SetOutput(os.Stderr)
 	log.SetOutput(os.Stderr)
+	setReportCaller()
+	logrus.Trace("init app")
+}
 
+func setReportCaller() {
 	if caller := os.Getenv("PKI_LOG_CALLER"); caller == "1" || caller == "true" {
 		logrus.SetReportCaller(true)
 	} else {
 		logrus.SetReportCaller(false)
 	}
-
-	logrus.Trace("init app")
 }
 
 type LogLogger interface {
@@ -72,7 +74,7 @@ func (a *App) Logger(prefix string) LogLogger {
 }
 
 func (a *App) Execute(cfg Config) {
-	cmd := command(cfg)
+	cmd := a.command(cfg)
 
 	if err := cmd.Execute(); err != nil {
 		a.Exit(1)
@@ -114,7 +116,7 @@ func (a *App) Append(s string) (io.WriteCloser, error) {
 	case "/dev/null":
 		return NewNopWriterCloser(ioutil.Discard)
 	default:
-		return a.OpenFile(s, os.O_APPEND|os.O_WRONLY, 0644)
+		return a.OpenFile(s, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	}
 }
 
@@ -126,12 +128,12 @@ func (a *App) ReadYAML(path string, data interface{}) error {
 	defer fp.Close()
 
 	dec := yaml.NewDecoder(fp)
-	return dec.Decode(&data)
+	return dec.Decode(data)
 }
 
 type cobraRunner func(cmd *cobra.Command, args []string) error
 
-func command(cfg Config) *cobra.Command {
+func (a *App) command(cfg Config) *cobra.Command {
 	var persistentPreRun, preRun, run, postRun, persistentPostRun cobraRunner
 	var subCommands []Config
 
@@ -161,6 +163,7 @@ func command(cfg Config) *cobra.Command {
 		PostRunE:           postRun,
 		PersistentPostRunE: persistentPostRun,
 	}
+	cmd.SetOutput(a.Stdout)
 
 	var flags *pflag.FlagSet
 	if _, ok := cfg.(RootRunner); ok {
@@ -171,11 +174,11 @@ func command(cfg Config) *cobra.Command {
 
 	err := gpflag.ParseTo(cfg, flags)
 	if err != nil {
-		logrus.WithError(err).Fatal("failed to parse config flags")
+		logrus.WithError(err).Panic("failed to parse config flags")
 	}
 
 	for _, subCfg := range subCommands {
-		cmd.AddCommand(command(subCfg))
+		cmd.AddCommand(a.command(subCfg))
 	}
 
 	return &cmd
