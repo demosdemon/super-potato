@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/sqs/goreturns/returns"
 	"golang.org/x/tools/imports"
@@ -37,11 +38,13 @@ const (
 func Render(r Renderer, filename string, fs afero.Fs) error {
 	previous, err := afero.ReadFile(fs, filename)
 	if err != nil && !os.IsNotExist(err) {
+		logrus.WithError(err).Trace("error opening file")
 		return err
 	}
 
 	buf := bytes.Buffer{}
 	if err := r.Render(&buf); err != nil {
+		logrus.WithError(err).Trace("error rendering file")
 		return err
 	}
 
@@ -54,6 +57,7 @@ func Render(r Renderer, filename string, fs afero.Fs) error {
 		TabWidth:  8,
 	})
 	if err != nil {
+		logrus.WithError(err).Trace("error running go imports")
 		return err
 	}
 
@@ -61,10 +65,12 @@ func Render(r Renderer, filename string, fs afero.Fs) error {
 		RemoveBareReturns: true,
 	})
 	if err != nil {
+		logrus.WithError(err).Trace("error running goreturns")
 		return err
 	}
 
 	if bytes.Equal(previous, current) {
+		logrus.Trace("no change")
 		return ErrNoChange
 	}
 

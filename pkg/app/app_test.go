@@ -3,14 +3,15 @@ package app
 import (
 	"bytes"
 	"context"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"log"
 	"os"
 	"testing"
+
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var token = struct{}{}
