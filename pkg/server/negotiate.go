@@ -60,7 +60,7 @@ func (s *Server) negotiate(c *gin.Context, code int, data interface{}) {
 }
 
 func getRenderer(format string, data interface{}, c *gin.Context, code int) render.Render {
-	logrus.WithField("format", format).WithField("data", data).Trace("getRenderer")
+	logrus.WithField("format", format).Trace("getRenderer")
 
 	switch format {
 	case binding.MIMEJSON:
@@ -78,8 +78,6 @@ func getRenderer(format string, data interface{}, c *gin.Context, code int) rend
 }
 
 func (p *pretty) Read(buf []byte) (int, error) {
-	logrus.Trace("pretty read")
-
 	p.bufMu.Lock()
 	defer p.bufMu.Unlock()
 
@@ -89,7 +87,6 @@ func (p *pretty) Read(buf []byte) (int, error) {
 			logrus.WithError(err).Trace()
 			return 0, err
 		}
-		logrus.WithField("r", r).Trace("post render")
 		p.buf = strings.NewReader(r)
 	}
 
