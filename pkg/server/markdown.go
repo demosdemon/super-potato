@@ -71,6 +71,7 @@ func (m *Markdown) Render(w http.ResponseWriter) error {
 }
 
 func (m *Markdown) WriteContentType(w http.ResponseWriter) {
+	w.Header().Set("Content-Security-Policy", "img-src *")
 	if v, ok := w.Header()["Content-Type"]; ok && len(v) > 0 {
 		return
 	}
