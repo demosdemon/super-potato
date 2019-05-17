@@ -3,18 +3,19 @@ package app
 import (
 	"bytes"
 	"context"
-	"io"
-	"io/ioutil"
-	"log"
-	"os"
-	"syscall"
-
 	"github.com/octago/sflags/gen/gpflag"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v2"
+	"io"
+	"io/ioutil"
+	"log"
+	"os"
+	"runtime"
+	"syscall"
+	"time"
 
 	"github.com/demosdemon/super-potato/pkg/platformsh"
 )
@@ -64,6 +65,7 @@ func New(ctx context.Context) (*App, context.CancelFunc) {
 		Stdout:  os.Stdout,
 		Stderr:  os.Stderr,
 	}
+	go app.logMemoryTick()
 
 	return app, cancel
 }
@@ -84,6 +86,34 @@ func (a *App) Execute(cfg Config) {
 	}
 
 	a.Exit(0)
+}
+
+func (a *App) LogMemory() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
+	logrus.WithFields(logrus.Fields{
+		"Alloc":        m.Alloc,
+		"AllocMB":      m.Alloc >> 20,
+		"TotalAlloc":   m.TotalAlloc,
+		"TotalAllocMB": m.TotalAlloc >> 20,
+		"Sys":          m.Sys,
+		"SysMB":        m.Sys >> 20,
+		"NumGC":        m.NumGC,
+	}).Debug("memory stats")
+}
+
+func (a *App) logMemoryTick() {
+	ticker := time.NewTicker(time.Minute)
+	for {
+		select {
+		case <-ticker.C:
+			a.LogMemory()
+		case <-a.Done():
+			ticker.Stop()
+			return
+		}
+	}
 }
 
 func (a *App) GetInput(s string) (io.ReadCloser, error) {
