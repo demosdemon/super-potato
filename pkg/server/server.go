@@ -124,7 +124,7 @@ func (s *Server) getSigner() (signer.Signer, error) {
 		return nil, errors.New("PKI_INTERMEDIATE_PRIVATE_KEY not found in environment")
 	}
 
-	pool := x509.CertPool{}
+	pool := x509.NewCertPool()
 	if !pool.AppendCertsFromPEM([]byte(rootPem)) {
 		return nil, errors.New("failed adding root certs to pool")
 	}
@@ -133,7 +133,7 @@ func (s *Server) getSigner() (signer.Signer, error) {
 		Profiles: map[string]*config.SigningProfile{},
 		Default:  config.DefaultConfig(),
 	}
-	policy.SetRemoteCAs(&pool)
+	policy.SetRemoteCAs(pool)
 
 	b := pki.Bundle{}
 
