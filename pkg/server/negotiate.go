@@ -1,12 +1,15 @@
 package server
 
 import (
+	"bytes"
+	"encoding"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -18,26 +21,30 @@ import (
 const prettyMarkdownTemplate = "# %s\n\n```%s\n%s\n```\n"
 
 type pretty struct {
-	*Markdown
-	buf    io.Reader
+	Markdown
 	Title  string
 	Format string
 	Data   interface{}
+
+	bufMu sync.Mutex
+	buf   io.Reader
 }
 
-func newPretty(c *gin.Context, code int, data interface{}) pretty {
+func newPretty(c *gin.Context, code int, data interface{}) *pretty {
 	format := c.NegotiateFormat(
 		binding.MIMEJSON,
 		binding.MIMEYAML,
 	)
+
+	logrus.WithField("format", format).Trace("pretty")
 
 	p := pretty{
 		Title:  http.StatusText(code),
 		Format: format,
 		Data:   data,
 	}
-	p.Markdown = NewMarkdown(p)
-	return p
+	p.Markdown.input = &p
+	return &p
 }
 
 func (s *Server) negotiate(c *gin.Context, code int, data interface{}) {
@@ -55,6 +62,8 @@ func (s *Server) negotiate(c *gin.Context, code int, data interface{}) {
 }
 
 func getRenderer(format string, data interface{}, c *gin.Context, code int) render.Render {
+	logrus.WithField("format", format).Trace("getRenderer")
+
 	switch format {
 	case binding.MIMEJSON:
 		return render.IndentedJSON{Data: data}
@@ -70,18 +79,25 @@ func getRenderer(format string, data interface{}, c *gin.Context, code int) rend
 	}
 }
 
-func (p pretty) Read(buf []byte) (int, error) {
+func (p *pretty) Read(buf []byte) (int, error) {
+	p.bufMu.Lock()
+	defer p.bufMu.Unlock()
+
 	if p.buf == nil {
 		r, err := p.render()
 		if err != nil {
+			logrus.WithError(err).Trace()
 			return 0, err
 		}
 		p.buf = strings.NewReader(r)
 	}
+
 	return p.buf.Read(buf)
 }
 
-func (p pretty) render() (string, error) {
+func (p *pretty) render() (string, error) {
+	logrus.Trace("pretty render")
+
 	var format string
 	var formatted []byte
 	var err error
@@ -95,6 +111,10 @@ func (p pretty) render() (string, error) {
 	case binding.MIMEYAML:
 		format = "yaml"
 		formatted, err = yaml.Marshal(p.Data)
+	default:
+		logrus.WithField("format", p.Format).Warn("unknown format")
+		format = "text"
+		formatted, err = marshalText(p.Data)
 	}
 
 	if err != nil {
@@ -102,4 +122,13 @@ func (p pretty) render() (string, error) {
 	}
 
 	return fmt.Sprintf(prettyMarkdownTemplate, p.Title, format, string(formatted)), nil
+}
+
+func marshalText(data interface{}) ([]byte, error) {
+	if m, ok := data.(encoding.TextMarshaler); ok {
+		return m.MarshalText()
+	}
+	var buf bytes.Buffer
+	_, err := fmt.Fprintf(&buf, "%v", data)
+	return buf.Bytes(), err
 }
