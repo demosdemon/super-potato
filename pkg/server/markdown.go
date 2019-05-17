@@ -2,10 +2,11 @@ package server
 
 import (
 	"fmt"
-	"github.com/russross/blackfriday/v2"
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/russross/blackfriday/v2"
 )
 
 const prettyHTMLTemplate = `<!DOCTYPE html>
