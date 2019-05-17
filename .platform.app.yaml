@@ -12,6 +12,13 @@ hooks:
   deploy: |
     time ./super-potato deploy
 
+build:
+  caches:
+    go:
+      directory: go/pkg
+      watch:
+        - go.sum
+
 variables:
   env:
     PKI_ROOT_CERTIFICATE: !include
