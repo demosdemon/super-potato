@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -94,4 +95,12 @@ func (s *Server) getLogoPNG(c *gin.Context) {
 		ContentType: platformsh.FormatPNG,
 	}
 	c.Render(http.StatusOK, render)
+}
+
+func (s *Server) getHeaders(c *gin.Context) {
+	h := gin.H{}
+	for k, v := range c.Request.Header {
+		h[k] = strings.Join(v, "; ")
+	}
+	s.negotiate(c, 200, h)
 }
