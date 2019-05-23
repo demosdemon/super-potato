@@ -38,6 +38,7 @@ func (s *Server) register(r gin.IRouter) {
 	r.GET("favicon.ico", s.serverLifetime, s.getFaviconICO)
 	r.GET("logo.svg", s.cacheControl, s.getLogoSVG)
 	r.GET("logo.png", s.serverLifetime, s.getLogoPNG)
+	r.GET("headers", s.getHeaders)
 	s.registerGeneratedRoutes(r.Group("env", s.requireAuth))
 }
 
